@@ -1,0 +1,27 @@
+<?php
+
+# Copyright (c) 2012 John Reese
+# Licensed under the MIT license
+
+$s_plugin_SourceGitea_ = '';
+$s_plugin_SourceGitea_tea_root = 'URL to the gitea installation<br><span class="small">This where gitea is available e.g. <a href="https://try.gitea.io">https://try.gitea.io</a>.</span>';
+$s_plugin_SourceGitea_gitea = 'Gitea';
+$s_plugin_SourceGitea_title = 'Integración Gitea';
+$s_plugin_SourceGitea_description = 'Añade la integración con Gitea al framework de Integración de Código.';
+
+$s_plugin_SourceGitea_hub_username = 'Nombre de usuario en Gitea';
+$s_plugin_SourceGitea_hub_reponame = 'Repositorio Gitea<br/><span class="small">(minúsculas, nombre espaciado)</span>';
+$s_plugin_SourceGitea_hub_app_client_id = 'Identificador Gitea <br /><span class="small">Para repositorios privados. Crear una nueva <a href="https://github.com/settings/applications">aplicación Gitea</a> si es necesario</span>';
+$s_plugin_SourceGitea_hub_app_secret = 'Contraseña de Gitea <br /><span class="small">Para repositorios privados</span>';
+$s_plugin_SourceGitea_hub_app_access_token = 'Token de acceso a Gitea<br /><span class="small">Para repositorios privados</span>';
+$s_plugin_SourceGitea_master_branch = 'Ramas principales<br/><span class="small">(lista separada por comas)</span>';
+
+$s_plugin_SourceGitea_hub_app_client_id_secret_missing = 'N/D<br /><span class="small">Debes introducir el identificador de Gitea y la contraseña, y actualizar antes de poder ser autorizado</span>';
+$s_plugin_SourceGitea_hub_app_authorize = 'Pulsa para autorizar';
+$s_plugin_SourceGitea_hub_app_authorized = 'Autorizado';
+
+$s_plugin_SourceGitea_repo_authorized = '<p>MantisBT ahora está autorizado a acceder a este repositorio Gitea.</p>';
+$s_plugin_SourceGitea_repo_authorization_failed = '<p style="color: red;">MantisBT no ha sido autorizado para acceder a este repositorio Gitea.</p>';
+
+$s_plugin_SourceGitea_oauth_authorization = 'Autorización OAuth Gitea';
+$s_plugin_SourceGitea_back_repo = 'Volver al repositorio';

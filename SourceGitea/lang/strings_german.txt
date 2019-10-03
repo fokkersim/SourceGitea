@@ -1,0 +1,33 @@
+<?php
+
+# Copyright (c) 2012 John Reese
+# Licensed under the MIT license
+
+$s_plugin_SourceGitea_ = '';
+$s_plugin_SourceGitea_tea_root = 'URL zur Gitea Installation<br><span class="small">Der Ort and dem Gitea zur Verfügung steht z.B. <a href="https://try.gitea.io">https://try.gitea.io</a>.</span>';
+$s_plugin_SourceGitea_gitea = 'Gitea';
+$s_plugin_SourceGitea_title = 'Gitea Integration';
+$s_plugin_SourceGitea_description = 'Integration für Gitea über die VCS Basisintegration.';
+
+$s_plugin_SourceGitea_hub_username = 'Gitea Benutzername';
+$s_plugin_SourceGitea_hub_reponame = 'Gitea Projektarchiv<br/><span class="small">(Klein Leerzeichen)</span>';
+$s_plugin_SourceGitea_hub_app_client_id = 'Gitea Application Client ID<br><span class="small">This is required for private repositories and also allows to get around the <a href="https://developer.github.com/v3/#rate-limiting">Rate Limit</a> when importing data.<br>Create a new <a href="https://github.com/settings/applications">Gitea Application</a> if needed.</span>';
+$s_plugin_SourceGitea_hub_app_secret = 'Gitea Applikationsgeheimnis';
+$s_plugin_SourceGitea_hub_app_access_token = 'Gitea Applikationszugrifftoken';
+$s_plugin_SourceGitea_hub_webhook_secret = 'Gitea Webhook Geheimnis<br/><span class="small">Das muss exakt dem <em>Geheimnis</em> set in the webhook\'s definition, and is used to validate the payload\'s signature.</span>';
+$s_plugin_SourceGitea_master_branch = 'Hauptzweige<br/><span class="small">(kommaseparierte Liste oder "*" für alle)</span>';
+
+$s_plugin_SourceGitea_hub_app_client_id_secret_missing = '<span class="small">You must first enter the Gitea Application <em>Client ID</em> &amp; <em>Secret</em> and update the repository before you can authorize.</span>';
+$s_plugin_SourceGitea_hub_app_authorize = 'Click to Authorize';
+$s_plugin_SourceGitea_hub_app_authorized = 'Authorisiert';
+$s_plugin_SourceGitea_hub_app_revoke = 'Zurückgezogen';
+
+$s_plugin_SourceGitea_webhook_create = 'Create Webhook';
+$s_plugin_SourceGitea_webhook_success= 'Webhook created successfully';
+$s_plugin_SourceGitea_webhook_exists = 'Webhook already exists';
+
+$s_plugin_SourceGitea_repo_authorized = '<p>MantisBT is now authorized to access this Gitea repository.</p>';
+$s_plugin_SourceGitea_repo_authorization_failed = '<p style="color: red;">Sorry, MantisBT could not be authorized to access this Gitea repository.</p>';
+
+$s_plugin_SourceGitea_oauth_authorization = 'Gitea OAuth Authorization';
+$s_plugin_SourceGitea_back_repo = 'Back to Repository';
