@@ -12,9 +12,9 @@ require_once( config_get( 'core_path' ) . 'json_api.php' );
 
 class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 
-	const PLUGIN_VERSION = '2.1.0';
+	const PLUGIN_VERSION = '0.0.1';
 	const FRAMEWORK_VERSION_REQUIRED = '2.2.0';
-	const MANTIS_VERSION = '2.3.0';
+	const MANTIS_VERSION = '2.17.1';
 
 	public $linkPullRequest = '/pull/%s';
 
@@ -429,11 +429,11 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 
 	private function api_uri( $p_repo, $p_path ) {
 		$f_tea_root = $p_repo->info['tea_root'];
-		$t_uri = "$f_tea_root/api/v1/" . $p_path;
+		$t_uri = "$f_tea_root/api/v1/".$p_path;
 		if( isset( $p_repo->info['hub_app_access_token'] ) ) {
 			$t_access_token = $p_repo->info['hub_app_access_token'];
 			if ( !is_blank( $t_access_token ) ) {
-				$t_uri .= ' -H "accept: application/json" -H "Authorization: token ' . $t_access_token;
+				$t_uri .= ' -H "accept: application/json" -H "Authorization: token '.$t_access_token;
 			}
 		}
 
