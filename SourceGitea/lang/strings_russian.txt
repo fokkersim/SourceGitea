@@ -11,8 +11,7 @@ $s_plugin_SourceGitea_description = 'Добавляет интеграцию Git
 
 $s_plugin_SourceGitea_hub_username = 'Имя пользователя Gitea';
 $s_plugin_SourceGitea_hub_reponame = 'Имя репозитория Gitea<br/><span class="small">(только имя в нижней раскладке)</span>';
-$s_plugin_SourceGitea_hub_app_client_id = 'ID приложения Gitea <br /><span class="small">Для частных репозиториев. Создать новый в <a href="https://github.com/settings/applications">Gitea Application</a> если надо</span><br />Application OAuth callback должен быть вида: http://адрес к вашему MantisBT/plugin.php?page=SourceGitea/SourceGitea.php';
-$s_plugin_SourceGitea_hub_app_secret = 'Gitea Application Secret<br /><span class="small">Для частных репозиториев</span>';
+$s_plugin_SourceGitea_hub_app_client_id = 'ID приложения Gitea <br /><span class="small">Gitea OAuth</span>';
 $s_plugin_SourceGitea_hub_app_access_token = 'Gitea Application Access Token<br /><span class="small">Для частных репозиториев</span>';
 $s_plugin_SourceGitea_master_branch = 'Главные ветки<br/><span class="small">(список, разделенный запятыми)</span>';
 $s_plugin_SourceGitea_hub_app_client_id_secret_missing = 'Н/Д<br /><span class="small">Вы должны ввести ID приложение Gitea &amp; Secret и обновить прежде чем сможете авторизоваться</span>';

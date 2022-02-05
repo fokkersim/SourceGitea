@@ -699,6 +699,7 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 		$t_hub_app_client_id = null;
 		$t_hub_app_secret = null;
 		$t_hub_app_access_token = null;
+		$f_tea_root = $p_repo->info['tea_root'];
 
 		if ( isset( $p_repo->info['hub_app_client_id'] ) ) {
 			$t_hub_app_client_id = $p_repo->info['hub_app_client_id'];
@@ -715,10 +716,11 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 			$t_param = array(
 				'client_id' => $t_hub_app_client_id,
 				'redirect_uri' => $t_redirect_uri,
-				'scope' => 'repo',
+				'scope' => 'repo',						# Gitea does not support scopes and shall give access to all ressources and organizations of a user
 				'allow_signup' => false,
 			);
-			return 'https://github.com/login/oauth/authorize?' . http_build_query( $t_param );
+			
+			return "$f_tea_root/login/oauth/authorize?" . http_build_query( $t_param );
 		} else {
 			return '';
 		}
@@ -726,7 +728,8 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 
 	public static function oauth_get_access_token( $p_repo, $p_code ) {
 		# build the GitHub URL & POST data
-		$t_url = 'https://github.com/login/oauth/access_token';
+		$f_tea_root = $p_repo->info['tea_root'];
+		$t_url = "$f_tea_root/login/oauth/access_token";
 		$t_post_data = array( 'client_id' => $p_repo->info['hub_app_client_id'],
 			'client_secret' => $p_repo->info['hub_app_secret'],
 			'code' => $p_code );

@@ -11,7 +11,7 @@ $s_plugin_SourceGitea_description = 'Adds Gitea integration to the Source Integr
 
 $s_plugin_SourceGitea_hub_username = 'Gitea Username';
 $s_plugin_SourceGitea_hub_reponame = 'Gitea Repository Name<br/><span class="small">(no spaces; must match the name as received from the webservice\'s payload)</span>';
-$s_plugin_SourceGitea_hub_app_client_id = 'Gitea Application Client ID<br><span class="small">This is required for private repositories and also allows to get around the <a href="https://developer.github.com/v3/#rate-limiting">Rate Limit</a> when importing data.<br>Create a new <a href="https://github.com/settings/applications">Gitea Application</a> if needed.</span>';
+$s_plugin_SourceGitea_hub_app_client_id = 'Gitea Application Client ID<br><span class="small">Gitea OAuth</span>';
 $s_plugin_SourceGitea_hub_app_secret = 'Gitea Application Secret';
 $s_plugin_SourceGitea_hub_app_access_token = 'Gitea Application Access Token';
 $s_plugin_SourceGitea_hub_webhook_secret = 'Gitea Webhook Secret<br/><span class="small">This must match the <em>Secret</em> set in the webhook\'s definition, and is used to validate the payload\'s signature.</span>';

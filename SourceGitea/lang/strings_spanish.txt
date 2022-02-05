@@ -11,7 +11,7 @@ $s_plugin_SourceGitea_description = 'Añade la integración con Gitea al framewo
 
 $s_plugin_SourceGitea_hub_username = 'Nombre de usuario en Gitea';
 $s_plugin_SourceGitea_hub_reponame = 'Repositorio Gitea<br/><span class="small">(minúsculas, nombre espaciado)</span>';
-$s_plugin_SourceGitea_hub_app_client_id = 'Identificador Gitea <br /><span class="small">Para repositorios privados. Crear una nueva <a href="https://github.com/settings/applications">aplicación Gitea</a> si es necesario</span>';
+$s_plugin_SourceGitea_hub_app_client_id = 'Identificador Gitea <br /><span class="small">Gitea OAuth</span>';
 $s_plugin_SourceGitea_hub_app_secret = 'Contraseña de Gitea <br /><span class="small">Para repositorios privados</span>';
 $s_plugin_SourceGitea_hub_app_access_token = 'Token de acceso a Gitea<br /><span class="small">Para repositorios privados</span>';
 $s_plugin_SourceGitea_master_branch = 'Ramas principales<br/><span class="small">(lista separada por comas)</span>';
