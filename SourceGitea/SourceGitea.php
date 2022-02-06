@@ -716,8 +716,7 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 			$t_param = array(
 				'client_id' => $t_hub_app_client_id,
 				'redirect_uri' => $t_redirect_uri,
-				'scope' => 'repo',						# Gitea does not support scopes and shall give access to all ressources and organizations of a user
-				'allow_signup' => false,
+				'response_type' => 'code'						# Gitea does not support scopes and shall give access to all ressources and organizations of a user
 			);
 			
 			return "$f_tea_root/login/oauth/authorize?" . http_build_query( $t_param );
@@ -734,7 +733,6 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 			'client_secret' => $p_repo->info['hub_app_secret'],
 			'code' => $p_code );
 		$t_data = self::url_post( $t_url, $t_post_data );
-
 		$t_access_token = '';
 		if ( !empty( $t_data ) ) {
 			$t_response = array();
