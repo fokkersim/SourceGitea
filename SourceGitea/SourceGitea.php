@@ -74,7 +74,7 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 	}
 
 	/**
-	 * RESTful route to revoke GitHub application token
+	 * RESTful route to revoke GitTea application token
 	 *
 	 * @param Slim\Http\Request  $p_request
 	 * @param Slim\Http\Response $p_response
@@ -89,7 +89,7 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 			return $p_response->withStatus( HTTP_STATUS_BAD_REQUEST, 'Invalid Repository Id' );
 		}
 
-		# Check that the repo is of GitHub type
+		# Check that the repo is of GitTea type
 		$t_repo = SourceRepo::load( $t_repo_id );
 		if( $t_repo->type != $this->type ) {
 			return $p_response->withStatus( HTTP_STATUS_BAD_REQUEST, "Id $t_repo_id is not a Gitea repository" );
@@ -433,14 +433,16 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 		if( isset( $p_repo->info['hub_app_access_token'] ) ) {
 			$t_access_token = $p_repo->info['hub_app_access_token'];
 			if ( !is_blank( $t_access_token ) ) {
-				$t_uri .= ' -H "accept: application/json" -H "Authorization: token '.$t_access_token;
+				$t_uri .= ' -H "accept: application/json" -H "Authorization: token '.$t_access_token . '"';
 			}
 		}
-
+		#trigger_error("t_uri = $t_uri", E_USER_ERROR);
 		return $t_uri;
 	}
 
 	private function api_json_url( $p_repo, $p_url, $p_member = null ) {
+		# Gitea API does not support rate limiting
+		/*
 		static $t_start_time;
 		if ( $t_start_time === null ) {
 			$t_start_time = microtime( true );
@@ -460,7 +462,7 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 				usleep( $t_sleep_time );
 			}
 		}
-
+		*/
 		return json_url( $p_url, $p_member );
 	}
 
@@ -541,7 +543,6 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 
 	public function import_full( $p_repo ) {
 		echo '<pre>';
-
 		$t_branch = $p_repo->info['master_branch'];
 		if ( is_blank( $t_branch ) ) {
 			$t_branch = 'master';
@@ -558,8 +559,9 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 			$t_reponame = $p_repo->info['hub_reponame'];
 
 			$t_uri = $this->api_uri( $p_repo, "repos/$t_username/$t_reponame/branches" );
-			$t_json = $this->api_json_url( $p_repo, $t_uri );
-
+			#$t_json = $this->api_json_url( $p_repo, $t_uri );
+			$t_json = self::url_post_json( $t_uri);
+			trigger_error("t_json = $t_json", E_USER_ERROR);
 			$t_branches = array();
 			foreach ($t_json as $t_branch)
 			{
@@ -619,8 +621,9 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 
 			echo "Retrieving $t_commit_id ... ";
 			$t_uri = $this->api_uri( $p_repo, "repos/$t_username/$t_reponame/commits/$t_commit_id" );
-			$t_json = $this->api_json_url( $p_repo, $t_uri );
-
+			#$t_json = $this->api_json_url( $p_repo, $t_uri );
+			$t_json = file_get_contents($t_uri);
+			trigger_error("t_json = $t_json", E_USER_ERROR);
 			if ( false === $t_json || is_null( $t_json ) ) {
 				# Some error occured retrieving the commit
 				echo "failed.\n";
@@ -718,7 +721,7 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 				'redirect_uri' => $t_redirect_uri,
 				'response_type' => 'code'						# Gitea does not support scopes and shall give access to all ressources and organizations of a user
 			);
-			
+
 			return "$f_tea_root/login/oauth/authorize?" . http_build_query( $t_param );
 		} else {
 			return '';
@@ -726,19 +729,31 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 	}
 
 	public static function oauth_get_access_token( $p_repo, $p_code ) {
-		# build the GitHub URL & POST data
+		# build the GitTea URL & POST data
 		$f_tea_root = $p_repo->info['tea_root'];
 		$t_url = "$f_tea_root/login/oauth/access_token";
+		#trigger_error("oauth_get_access_token", E_USER_ERROR);
+		$t_redirect_uri = config_get('path')
+			. plugin_page( 'oauth_authorize', true) . '&'
+			. http_build_query( array( 'id' => $p_repo->id ) );
 		$t_post_data = array( 'client_id' => $p_repo->info['hub_app_client_id'],
 			'client_secret' => $p_repo->info['hub_app_secret'],
-			'code' => $p_code );
+			'code' => $p_code,
+			'grant_type' => 'authorization_code',
+			'redirect_uri' => $t_redirect_uri );
+		#trigger_error("url = $t_url, data = ". implode(", ", $t_post_data ), E_USER_ERROR);
 		$t_data = self::url_post( $t_url, $t_post_data );
 		$t_access_token = '';
 		if ( !empty( $t_data ) ) {
-			$t_response = array();
-			parse_str( $t_data, $t_response );
-			if ( isset( $t_response['access_token'] ) === true ) {
+			#$t_response = array();
+			#parse_str( $t_data, $t_response );
+			$t_response = json_decode($t_data, true);
+			#trigger_error("t_response = $t_response", E_USER_ERROR);
+			if ( array_key_exists( 'access_token', $t_response) === true ) {
 				$t_access_token = $t_response['access_token'];
+			}
+			else {
+				trigger_error("Error get access token failed", E_USER_ERROR);
 			}
 		}
 
@@ -751,6 +766,7 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 			}
 			return true;
 		} else {
+			#trigger_error("t_data = $t_data", E_USER_ERROR);
 			return false;
 		}
 	}
@@ -774,6 +790,23 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 			$t_url = escapeshellarg( $p_url );
 			$t_post_data = escapeshellarg( $t_post_data );
 			return shell_exec( 'curl ' . $t_url . ' -d ' . $t_post_data );
+		}
+	}
+
+	public static function url_post_json( $p_url ) {
+		# Use the PHP cURL extension
+		if( function_exists( 'curl_init' ) ) {
+			$t_curl = curl_init( $p_url );
+			curl_setopt($t_curl, CURLOPT_RETURNTRANSFER, true);
+			curl_setopt($t_curl, CURLOPT_URL, $p_url);
+			$result = curl_exec($t_curl);
+			curl_close($t_curl);
+			$t_obj = json_decode($result);
+			return $t_obj;
+		} else {
+			# Last resort system call
+			$t_url = escapeshellarg( $p_url );
+			return shell_exec( 'curl ' . $t_url );
 		}
 	}
 
