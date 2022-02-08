@@ -558,9 +558,9 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 			$t_username = $p_repo->info['hub_username'];
 			$t_reponame = $p_repo->info['hub_reponame'];
 
-			$t_uri = $this->api_uri( $p_repo, "repos/$t_username/$t_reponame/branches" );
+			#$t_uri = $this->api_uri( $p_repo, "repos/$t_username/$t_reponame/branches" );
 			#$t_json = $this->api_json_url( $p_repo, $t_uri );
-			$t_json = self::url_post_json( $t_uri);
+			$t_json = self::url_get_json( $p_repo, "repos/$t_username/$t_reponame/branches" );
 			trigger_error("t_json = $t_json", E_USER_ERROR);
 			$t_branches = array();
 			foreach ($t_json as $t_branch)
@@ -621,9 +621,9 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 
 			echo "Retrieving $t_commit_id ... ";
 			$t_uri = $this->api_uri( $p_repo, "repos/$t_username/$t_reponame/commits/$t_commit_id" );
-			#$t_json = $this->api_json_url( $p_repo, $t_uri );
-			$t_json = file_get_contents($t_uri);
-			trigger_error("t_json = $t_json", E_USER_ERROR);
+			$t_json = $this->api_json_url( $p_repo, $t_uri );
+			#$t_json = file_get_contents($t_uri);
+			#trigger_error("t_json = $t_json", E_USER_ERROR);
 			if ( false === $t_json || is_null( $t_json ) ) {
 				# Some error occured retrieving the commit
 				echo "failed.\n";
@@ -801,12 +801,40 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 			curl_setopt($t_curl, CURLOPT_URL, $p_url);
 			$result = curl_exec($t_curl);
 			curl_close($t_curl);
-			$t_obj = json_decode($result);
+			$t_obj = json_decode($result, true);
 			return $t_obj;
 		} else {
 			# Last resort system call
 			$t_url = escapeshellarg( $p_url );
 			return shell_exec( 'curl ' . $t_url );
+		}
+	}
+
+	public static function url_get_json( $p_repo, $p_path ) {
+		$f_tea_root = $p_repo->info['tea_root'];
+		$t_uri = "$f_tea_root/api/v1/$p_path";
+		if( isset( $p_repo->info['hub_app_access_token'] ) ) {
+			$t_access_token = $p_repo->info['hub_app_access_token'];
+			$auth_data = array (
+				'accept' => 'application/json',
+				'Authorization' => "token $t_access_token"
+			);
+		}
+		# Use the PHP cURL extension
+		if( function_exists( 'curl_init' ) ) {
+			$t_curl = curl_init( $t_uri );
+			curl_setopt($t_curl, CURLOPT_RETURNTRANSFER, true);
+			curl_setopt($t_curl, CURLOPT_HTTPHEADER, $auth_data);	# Pass authentication data in header
+			curl_setopt( $t_curl, CURLOPT_POST, array('accept: application/json', 'Authorization: token ' . $t_access_token) );
+			$result = curl_exec($t_curl);
+			curl_close($t_curl);
+			$t_obj = json_decode($result, true);
+			return $t_obj;
+		} else {
+			# Last resort system call
+			$t_url = escapeshellarg( $t_uri );
+			$t_return = shell_exec( 'curl ' . $t_url .' -H ' . '"accept: application/json"' . ' -H ' . '"' ."Authorization: token ".$t_access_token . '"' );
+			return json_decode($t_return);
 		}
 	}
 
