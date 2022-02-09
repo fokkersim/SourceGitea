@@ -816,17 +816,16 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 		if( isset( $p_repo->info['hub_app_access_token'] ) ) {
 			$t_access_token = $p_repo->info['hub_app_access_token'];
 			$auth_data = array (
-				'accept' => 'application/json',
-				'Authorization' => "token $t_access_token",
-
+				'accept: application/json',
+				"Authorization: token $t_access_token",
+				'Content-Type: application/json'
 			);
 		}
-		#$t_access_token = '4143aa73ba0d3541a62867a9f8ffdc3cc015124d';
 		# Use the PHP cURL extension
 		if( function_exists( 'curl_init' ) ) {
 			$t_curl = curl_init( $t_uri );
 			curl_setopt($t_curl, CURLOPT_RETURNTRANSFER, true);
-			curl_setopt($t_curl, CURLOPT_HTTPHEADER, array("accept: application/json", "Authorization: token $t_access_token", "Content-Type: application/json"));	# Pass authentication data in header
+			curl_setopt($t_curl, CURLOPT_HTTPHEADER, $auth_data);	# Pass authentication data in header
 			curl_setopt( $t_curl, CURLOPT_POST,  false);
 			$result = curl_exec($t_curl);
 			curl_close($t_curl);
@@ -836,7 +835,7 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 		} else {
 			# Last resort system call
 			$t_url = escapeshellarg( $t_uri );
-			$t_return = shell_exec( 'curl -X GET' . $t_url .' -H ' . '"accept: application/json"' . ' -H ' . '"' ."Authorization: token ".$t_access_token . '"' );
+			$t_return = shell_exec( 'curl -X GET' . $t_url .' -H ' . '"accept: application/json"' . ' -H ' . '"' ."Authorization: token ".$t_access_token . '"' .' -H ' . 'Content-Type: application/json' );
 			return json_decode($t_return, true);
 		}
 	}
