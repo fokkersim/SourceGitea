@@ -561,12 +561,14 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 			#$t_uri = $this->api_uri( $p_repo, "repos/$t_username/$t_reponame/branches" );
 			#$t_json = $this->api_json_url( $p_repo, $t_uri );
 			$t_json = self::url_get_json( $p_repo, "repos/$t_username/$t_reponame/branches" );
-			trigger_error("t_json = $t_json", E_USER_ERROR);
 			$t_branches = array();
+			#trigger_error("t_json = " . implode(",",$t_json), E_USER_ERROR);
 			foreach ($t_json as $t_branch)
 			{
 				$t_branches[] = $t_branch->name;
+				echo "Found branch $t_branch->name ... \n";
 			}
+			#trigger_error("t_branches = " . implode(",", $t_branches), E_USER_ERROR);
 		}
 		$t_changesets = array();
 
@@ -618,11 +620,10 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 
 		while( count( $s_parents ) > 0 && $s_counter < 200 ) {
 			$t_commit_id = array_shift( $s_parents );
-
 			echo "Retrieving $t_commit_id ... ";
-			$t_uri = $this->api_uri( $p_repo, "repos/$t_username/$t_reponame/commits/$t_commit_id" );
-			$t_json = $this->api_json_url( $p_repo, $t_uri );
-			#$t_json = file_get_contents($t_uri);
+			#$t_uri = $this->api_uri( $p_repo, "repos/$t_username/$t_reponame/commits/$t_commit_id" );
+			#$t_json = $this->api_json_url( $p_repo, $t_uri );
+			$t_json = self::url_get_json( $p_repo, "repos/$t_username/$t_reponame/commit/$t_commit_id" );
 			#trigger_error("t_json = $t_json", E_USER_ERROR);
 			if ( false === $t_json || is_null( $t_json ) ) {
 				# Some error occured retrieving the commit
@@ -829,14 +830,13 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 			curl_setopt( $t_curl, CURLOPT_POST,  false);
 			$result = curl_exec($t_curl);
 			curl_close($t_curl);
-			trigger_error("result = $result", E_USER_ERROR);
-			$t_obj = json_decode($result, true);
+			$t_obj = json_decode($result);
 			return $t_obj;
 		} else {
 			# Last resort system call
 			$t_url = escapeshellarg( $t_uri );
 			$t_return = shell_exec( 'curl -X GET' . $t_url .' -H ' . '"accept: application/json"' . ' -H ' . '"' ."Authorization: token ".$t_access_token . '"' .' -H ' . 'Content-Type: application/json' );
-			return json_decode($t_return, true);
+			return json_decode($t_return);
 		}
 	}
 
