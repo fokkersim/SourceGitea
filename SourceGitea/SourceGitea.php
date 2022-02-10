@@ -433,7 +433,7 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 		if( isset( $p_repo->info['hub_app_access_token'] ) ) {
 			$t_access_token = $p_repo->info['hub_app_access_token'];
 			if ( !is_blank( $t_access_token ) ) {
-				$t_uri .= ' -H "accept: application/json" -H "Authorization: token '.$t_access_token . '"';
+				$t_uri .= '?token '.$t_access_token;
 			}
 		}
 		#trigger_error("t_uri = $t_uri", E_USER_ERROR);
@@ -565,7 +565,7 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 			#trigger_error("t_json = " . implode(",",$t_json), E_USER_ERROR);
 			foreach ($t_json as $t_branch)
 			{
-				$t_branches[] = $t_branch->name;
+				$t_branches[] = $t_branch;
 				echo "Found branch $t_branch->name ... \n";
 			}
 			#trigger_error("t_branches = " . implode(",", $t_branches), E_USER_ERROR);
@@ -578,19 +578,19 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 			$t_query = "SELECT parent FROM $t_changeset_table
 				WHERE repo_id=" . db_param() . ' AND branch=' . db_param() .
 				' ORDER BY timestamp ASC';
-			$t_result = db_query( $t_query, array( $p_repo->id, $t_branch ), 1 );
+			$t_result = db_query( $t_query, array( $p_repo->id, $t_branch->name ), 1 );
 
-			$t_commits = array( $t_branch );
+			$t_commits = array_column(array($t_branch->commit), 'id');
 
 			if ( db_num_rows( $t_result ) > 0 ) {
 				$t_parent = db_result( $t_result );
-				echo "Oldest '$t_branch' branch parent: '$t_parent'\n";
+				echo "Oldest '$t_branch->name' branch parent: '$t_parent'\n";
 
 				if ( !empty( $t_parent ) ) {
 					$t_commits[] = $t_parent;
 				}
 			}
-
+			echo "t_commits = " . var_dump($t_commits);
 			$t_changesets = array_merge( $t_changesets, $this->import_commits( $p_repo, $t_commits, $t_branch ) );
 		}
 
