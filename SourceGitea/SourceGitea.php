@@ -565,7 +565,7 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 			#trigger_error("t_json = " . implode(",",$t_json), E_USER_ERROR);
 			foreach ($t_json as $t_branch)
 			{
-				$t_branches[] = $t_branch;
+				$t_branches[] = $t_branch->name;
 				echo "Found branch $t_branch->name ... \n";
 			}
 			#trigger_error("t_branches = " . implode(",", $t_branches), E_USER_ERROR);
@@ -578,19 +578,20 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 			$t_query = "SELECT parent FROM $t_changeset_table
 				WHERE repo_id=" . db_param() . ' AND branch=' . db_param() .
 				' ORDER BY timestamp ASC';
-			$t_result = db_query( $t_query, array( $p_repo->id, $t_branch->name ), 1 );
-
-			$t_commits = array_column(array($t_branch->commit), 'id');
-
+			$t_result = db_query( $t_query, array( $p_repo->id, $t_branch ), 1 );
+			#echo "t_branch = $t_branch\n";
+			$t_commits_full = self::url_get_json( $p_repo, "repos/$t_username/$t_reponame/commits" . '?' . http_build_query(array('sha' => $t_branch)) ); # The API also accepts branch names as filter here
+			#echo "t_commits_full = " . var_dump($t_commits_full);
+			$t_commits = array_column($t_commits_full, 'sha');
 			if ( db_num_rows( $t_result ) > 0 ) {
 				$t_parent = db_result( $t_result );
-				echo "Oldest '$t_branch->name' branch parent: '$t_parent'\n";
+				echo "Oldest '$t_branch' branch parent: '$t_parent'\n";
 
 				if ( !empty( $t_parent ) ) {
 					$t_commits[] = $t_parent;
 				}
 			}
-			echo "t_commits = " . var_dump($t_commits);
+			#echo "t_commits = " . var_dump($t_commits);
 			$t_changesets = array_merge( $t_changesets, $this->import_commits( $p_repo, $t_commits, $t_branch ) );
 		}
 
@@ -623,8 +624,8 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 			echo "Retrieving $t_commit_id ... ";
 			#$t_uri = $this->api_uri( $p_repo, "repos/$t_username/$t_reponame/commits/$t_commit_id" );
 			#$t_json = $this->api_json_url( $p_repo, $t_uri );
-			$t_json = self::url_get_json( $p_repo, "repos/$t_username/$t_reponame/commit/$t_commit_id" );
-			#trigger_error("t_json = $t_json", E_USER_ERROR);
+			$t_json = self::url_get_json( $p_repo, "repos/$t_username/$t_reponame/git/commits/$t_commit_id" );
+			echo "t_json (SHA $t_commit_id) = " . var_dump($t_json);
 			if ( false === $t_json || is_null( $t_json ) ) {
 				# Some error occured retrieving the commit
 				echo "failed.\n";
@@ -825,6 +826,7 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 		# Use the PHP cURL extension
 		if( function_exists( 'curl_init' ) ) {
 			$t_curl = curl_init( $t_uri );
+			curl_setopt($t_curl, CURLOPT_URL, $t_uri);
 			curl_setopt($t_curl, CURLOPT_RETURNTRANSFER, true);
 			curl_setopt($t_curl, CURLOPT_HTTPHEADER, $auth_data);	# Pass authentication data in header
 			curl_setopt( $t_curl, CURLOPT_POST,  false);
