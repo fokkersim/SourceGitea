@@ -625,7 +625,7 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 			#$t_uri = $this->api_uri( $p_repo, "repos/$t_username/$t_reponame/commits/$t_commit_id" );
 			#$t_json = $this->api_json_url( $p_repo, $t_uri );
 			$t_json = self::url_get_json( $p_repo, "repos/$t_username/$t_reponame/git/commits/$t_commit_id" );
-			echo "t_json (SHA $t_commit_id) = " . var_dump($t_json);
+			#echo "t_json (SHA $t_commit_id) = " . var_dump($t_json);
 			if ( false === $t_json || is_null( $t_json ) ) {
 				# Some error occured retrieving the commit
 				echo "failed.\n";
@@ -676,6 +676,8 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 
 			if ( isset( $p_json->files ) ) {
 				foreach ( $p_json->files as $t_file ) {
+					/*
+					# Gitea API does not give info about modification type (add, mod, rm)
 					switch ( $t_file->status ) {
 						case 'added':
 							$t_changeset->files[] = new SourceFile( 0, '', $t_file->filename, 'add' );
@@ -687,6 +689,8 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 							$t_changeset->files[] = new SourceFile( 0, '', $t_file->filename, 'rm' );
 							break;
 					}
+					*/
+					$t_changeset->files[] = new SourceFile( 0, '', $t_file->filename, 'mod' );
 				}
 			}
 
@@ -757,6 +761,12 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 			else {
 				trigger_error("Error get access token failed", E_USER_ERROR);
 			}
+			if ( array_key_exists( 'expires_in', $t_response) === true ) {
+				$p_repo->info['expires_in'] = $t_response['expires_in'];
+			}
+			if ( array_key_exists('refresh_token', $t_response) === true ) {
+				$p_repo->info['refresh_token'] = $t_response['refresh_token'];
+			}
 		}
 
 		if ( !empty( $t_access_token ) ) {
@@ -764,6 +774,7 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 				|| $t_access_token != $p_repo->info['hub_app_access_token']
 			) {
 				$p_repo->info['hub_app_access_token'] = $t_access_token;
+				$p_repo->info['authorization_time'] = time();
 				$p_repo->save();
 			}
 			return true;
@@ -795,24 +806,40 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 		}
 	}
 
-	public static function url_post_json( $p_url ) {
-		# Use the PHP cURL extension
-		if( function_exists( 'curl_init' ) ) {
-			$t_curl = curl_init( $p_url );
-			curl_setopt($t_curl, CURLOPT_RETURNTRANSFER, true);
-			curl_setopt($t_curl, CURLOPT_URL, $p_url);
-			$result = curl_exec($t_curl);
-			curl_close($t_curl);
-			$t_obj = json_decode($result, true);
-			return $t_obj;
-		} else {
-			# Last resort system call
-			$t_url = escapeshellarg( $p_url );
-			return shell_exec( 'curl ' . $t_url );
+	# Check if an oauth access token has timed out and a new one has to be requested via the refresh token
+	# @param: Source::repo
+	public static function check_oauth_timeout( $p_repo ) {
+		if( array_key_exists( 'expires_in', $p_repo->info ) ) {
+			$t_expireTime = $p_repo->info['expires_in'];
+			if(time() - $p_repo->info['authorization_time'] > $t_expireTime) {
+				# Access token expired...
+				return true;
+			}
+			else
+			{
+				# Access token not expired. Shall be valid
+				return false;
+			}
 		}
+		return true;
 	}
 
+	# Direct json GET from API with access token via http cURL header
+	# @param: Source::repo
+	# @param: String url path to the api location
 	public static function url_get_json( $p_repo, $p_path ) {
+		
+		if (self::check_oauth_timeout( $p_repo ) ) {
+			echo "Authorization token timed out... renew\n";
+			if ( array_key_exists('refresh_token', $p_repo->info) === true ) {
+				$t_authorized = self::oauth_get_access_token( $p_repo, $p_repo->info['refresh_token']);
+			}
+			else
+			{
+				echo "Error refresh token not found in repo configuration\n";
+			}
+		}
+		
 		$f_tea_root = $p_repo->info['tea_root'];
 		$t_uri = "$f_tea_root/api/v1/$p_path";
 		if( isset( $p_repo->info['hub_app_access_token'] ) ) {
@@ -841,5 +868,4 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 			return json_decode($t_return);
 		}
 	}
-
 }
