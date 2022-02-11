@@ -433,7 +433,7 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 		if( isset( $p_repo->info['hub_app_access_token'] ) ) {
 			$t_access_token = $p_repo->info['hub_app_access_token'];
 			if ( !is_blank( $t_access_token ) ) {
-				$t_uri .= '?token '.$t_access_token;
+				$t_uri .= '?token='. $t_access_token;
 			}
 		}
 		#trigger_error("t_uri = $t_uri", E_USER_ERROR);
