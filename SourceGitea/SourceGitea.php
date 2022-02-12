@@ -112,6 +112,7 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 	 * @return Slim\Http\Response
 	 */
 	public function route_webhook( $p_request, $p_response, $p_args ) {
+		trigger_error("route_webhook called...", E_USER_ERROR);
 		plugin_push_current( 'Source' );
 
 		# Make sure the given repository exists
@@ -132,6 +133,8 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 		# GitHub webhook payload URL
 		$t_payload_url = config_get( 'path' ) . plugin_page( 'checkin', true )
 			. '&api_key=' . plugin_config_get( 'api_key' );
+
+		trigger_error("t_payload_url = $t_payload_url", E_USER_ERROR);
 
 		# Retrieve existing webhooks
 		try {
@@ -759,7 +762,7 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 				$t_access_token = $t_response['access_token'];
 			}
 			else {
-				trigger_error("Error get access token failed", E_USER_ERROR);
+				#trigger_error("Error get access token failed", E_USER_ERROR);
 			}
 			if ( array_key_exists( 'expires_in', $t_response) === true ) {
 				$p_repo->info['expires_in'] = $t_response['expires_in'];
@@ -833,6 +836,10 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 			echo "Authorization token timed out... renew\n";
 			if ( array_key_exists('refresh_token', $p_repo->info) === true ) {
 				$t_authorized = self::oauth_get_access_token( $p_repo, $p_repo->info['refresh_token']);
+				if(!$t_authorized)
+				{
+					echo "Error access token refresh via oath failed\n";
+				}
 			}
 			else
 			{
