@@ -594,10 +594,9 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 					$t_commits[] = $t_parent;
 				}
 			}
-			#echo "t_commits = " . var_dump($t_commits);
 			$t_changesets = array_merge( $t_changesets, $this->import_commits( $p_repo, $t_commits, $t_branch ) );
 		}
-
+		#echo "t_changesets = " . var_dump($t_changesets);
 		echo '</pre>';
 
 		return $t_changesets;
