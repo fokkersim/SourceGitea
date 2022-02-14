@@ -134,14 +134,12 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 		$t_payload_url = config_get( 'path' ) . plugin_page( 'checkin', true )
 			. '&api_key=' . plugin_config_get( 'api_key' );
 
-		trigger_error("t_payload_url = $t_payload_url", E_USER_ERROR);
-
 		# Retrieve existing webhooks
 		try {
-			$t_github_api = new \GuzzleHttp\Client();
-			$t_api_uri = SourceGiteaPlugin::api_uri( $t_repo, "repos/$t_username/$t_reponame/hooks" );
-
-			$t_response = $t_github_api->get( $t_api_uri );
+			$t_gitea_api = new \GuzzleHttp\Client();
+			#$t_api_uri = SourceGiteaPlugin::api_uri( $t_repo, "repos/$t_username/$t_reponame/hooks" );
+			#$t_response = $t_gitea_api->get( $t_api_uri );
+			$t_response = SourceGiteaPlugin::url_get_json( $t_repo, "repos/$t_username/$t_reponame/hooks" );
 		}
 		catch( GuzzleHttp\Exception\ClientException $e ) {
 			return $e->getResponse();
@@ -151,7 +149,7 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 		# Determine if there is already a webhook attached to the plugin's payload URL
 		$t_id = false;
 		foreach( $t_hooks as $t_hook ) {
-			if(   $t_hook->name == 'web' && $t_hook->config->url == $t_payload_url ) {
+			if(   $t_hook->type == 'gitea' && $t_hook->config->url == $t_payload_url ) {
 				$t_id = $t_hook->id;
 				break;
 			}
@@ -159,8 +157,9 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 
 		if( $t_id ) {
 			# Webhook already exists for this URL
-			# Set the Github URL so user can easily link to it
-			$t_hook->web_url = "https://github.com/$t_username/$t_reponame/settings/hooks/" . $t_hook->id;
+			# Set the Gitea URL so user can easily link to it
+			$f_tea_root = $t_repo->info['tea_root'];
+			$t_hook->web_url = "$f_tea_root/$t_username/$t_reponame/settings/hooks/" . $t_hook->id;
 			return $p_response
 				->withStatus( HTTP_STATUS_CONFLICT,
 					plugin_lang_get( 'webhook_exists', 'SourceGithub' ) )
@@ -170,15 +169,17 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 		# Create new webhook
 		try {
 			$t_payload = array(
-				'name' => 'web',
+				'active' => 'true',
+				'branch_filter' => '*',
+				'events' => 'push',
 				'config' => array(
 					'url' => $t_payload_url,
 					'content_type' => 'json',
-					'secret' => $t_repo->info['hub_webhook_secret'],
-				)
+				),
+				'type' => 'gitea'
 			);
-
-			$t_github_response = $t_github_api->post( $t_api_uri,
+			# Authentication missing here
+			$t_gitea_response = $t_gitea_api->post( "repos/$t_username/$t_reponame/hooks?access_token=$t_access_token",
 				array( GuzzleHttp\RequestOptions::JSON => $t_payload )
 			);
 		}
@@ -188,9 +189,9 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 
 		return $p_response
 			->withStatus( HTTP_STATUS_CREATED,
-				plugin_lang_get( 'webhook_success', 'SourceGithub' ) )
+				plugin_lang_get( 'webhook_success', 'SourceGitea' ) )
 			->withHeader('Content-type', 'application/json')
-			->write( $t_github_response->getBody() );
+			->write( $t_gitea_response->getBody() );
 	}
 
 	public function show_type() {
@@ -437,7 +438,7 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 		if( isset( $p_repo->info['hub_app_access_token'] ) ) {
 			$t_access_token = $p_repo->info['hub_app_access_token'];
 			if ( !is_blank( $t_access_token ) ) {
-				$t_uri .= '?token='. $t_access_token;
+				$t_uri .= '?access_token='. $t_access_token;
 			}
 		}
 		#trigger_error("t_uri = $t_uri", E_USER_ERROR);
