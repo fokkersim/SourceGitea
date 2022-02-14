@@ -480,7 +480,7 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 			}
 		}
 
-		if ( false === stripos( $f_payload, 'github.com' ) ) {
+		if ( false === stripos( $f_payload, 'gitea' ) ) {
 			return;
 		}
 
