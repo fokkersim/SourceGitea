@@ -28,8 +28,8 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 			'Source' => self::FRAMEWORK_VERSION_REQUIRED,
 		);
 
-		$this->author = 'John Reese';
-		$this->contact = 'john@noswap.com';
+		$this->author = 'Andreas Harrer';
+		$this->contact = 'alwaysthreegreens@gmail.com';
 		$this->url = 'https://github.com/mantisbt-plugins/source-integration/';
 	}
 
@@ -470,10 +470,10 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 	}
 
 	public function precommit() {
-		# Legacy GitHub Service sends the payload via eponymous form variable
+		# Check if it the payload comes via eponymous form variable (currently not supported by gitea)
 		$f_payload = gpc_get_string( 'payload', null );
 		if ( is_null( $f_payload ) ) {
-			# If empty, retrieve the webhook's payload from the body
+			# If empty, retrieve the webhook's payload from the body, this is the std way for gitea webhooks
 			$f_payload = file_get_contents( 'php://input' );
 			if ( is_null( $f_payload ) ) {
 				return;
@@ -502,7 +502,7 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 
 			if ( $t_repo->info['hub_reponame'] == $t_reponame ) {
 				# Retrieve the payload's signature from the request headers
-				# Reference https://developer.github.com/webhooks/#delivery-headers
+				# Reference https://docs.gitea.io/en-us/webhooks/
 				$t_signature = null;
 				if( array_key_exists( 'HTTP_X_HUB_SIGNATURE', $_SERVER ) ) {
 					$t_signature = explode( '=', $_SERVER['HTTP_X_HUB_SIGNATURE'] );
