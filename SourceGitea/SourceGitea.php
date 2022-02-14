@@ -112,15 +112,12 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 	 * @return Slim\Http\Response
 	 */
 	public function route_webhook( $p_request, $p_response, $p_args ) {
-		trigger_error("route_webhook called...", E_USER_ERROR);
 		plugin_push_current( 'Source' );
-
 		# Make sure the given repository exists
 		$t_repo_id = isset( $p_args['id'] ) ? $p_args['id'] : $p_request->getParam( 'id' );
 		if( !SourceRepo::exists( $t_repo_id ) ) {
 			return $p_response->withStatus( HTTP_STATUS_BAD_REQUEST, 'Invalid Repository Id' );
 		}
-
 		# Check that the repo is of GitHub type
 		$t_repo = SourceRepo::load( $t_repo_id );
 		if( $t_repo->type != $this->type ) {
@@ -133,10 +130,11 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 		# GitHub webhook payload URL
 		$t_payload_url = config_get( 'path' ) . plugin_page( 'checkin', true )
 			. '&api_key=' . plugin_config_get( 'api_key' );
-
 		# Retrieve existing webhooks
 		try {
 			$t_gitea_api = new \GuzzleHttp\Client();
+			# OK UP TO HERE
+			#return $p_response->withStatus( HTTP_STATUS_BAD_REQUEST, $t_payload_url);
 			#$t_api_uri = SourceGiteaPlugin::api_uri( $t_repo, "repos/$t_username/$t_reponame/hooks" );
 			#$t_response = $t_gitea_api->get( $t_api_uri );
 			$t_response = SourceGiteaPlugin::url_get_json( $t_repo, "repos/$t_username/$t_reponame/hooks" );
@@ -144,7 +142,9 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 		catch( GuzzleHttp\Exception\ClientException $e ) {
 			return $e->getResponse();
 		}
-		$t_hooks = json_decode( (string) $t_response->getBody() );
+		
+		#$t_hooks = json_decode( (string) $t_response->getBody() );
+		$t_hooks = $t_response;
 
 		# Determine if there is already a webhook attached to the plugin's payload URL
 		$t_id = false;
@@ -162,7 +162,7 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 			$t_hook->web_url = "$f_tea_root/$t_username/$t_reponame/settings/hooks/" . $t_hook->id;
 			return $p_response
 				->withStatus( HTTP_STATUS_CONFLICT,
-					plugin_lang_get( 'webhook_exists', 'SourceGithub' ) )
+					plugin_lang_get( 'webhook_exists', 'SourceGitea' ) )
 				->withJson( $t_hook );
 		}
 

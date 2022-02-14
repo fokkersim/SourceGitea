@@ -88,7 +88,9 @@ jQuery(document).ready(function($) {
 			},
 			error: function(xhr, textStatus, errorThrown) {
 				status_icon.removeClass("fa-check green").addClass("fa-exclamation-triangle red");
-
+				console.log(xhr);
+				console.log(textStatus);
+				console.log(errorThrown);
 				var details = JSON.parse(xhr.responseText);
 				if (xhr.status === 409) {
 					status_message.html(
