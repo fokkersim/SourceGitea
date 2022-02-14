@@ -377,9 +377,10 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 <tr>
 	<td class="category"><?php echo plugin_lang_get( 'hub_webhook_secret' ) ?></td>
 	<td>
-		<input type="text" name="hub_webhook_secret" maxlength="250" size="40" value="<?php echo string_attribute( $t_hub_webhook_secret ) ?>"/>
+		<!--<input type="text" name="hub_webhook_secret" maxlength="250" size="40" value="<?php echo string_attribute( $t_hub_webhook_secret ) ?>"/> -->
 		<div id="webhook_create" class="sourcegithub_token hidden">
-			<div class="space-2"></div>
+			<div class="space-4"></div>
+			<div class="space-4"></div>
 			<button type="button" class="btn btn-primary btn-white btn-round btn-sm">
 				<?php echo plugin_lang_get( 'webhook_create' ); ?>
 			</button>
@@ -407,7 +408,7 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 		$f_hub_reponame = gpc_get_string( 'hub_reponame' );
 		$f_hub_app_client_id = gpc_get_string( 'hub_app_client_id' );
 		$f_hub_app_secret = gpc_get_string( 'hub_app_secret' );
-		$f_hub_webhook_secret = gpc_get_string( 'hub_webhook_secret' );
+		#$f_hub_webhook_secret = gpc_get_string( 'hub_webhook_secret' );
 		$f_master_branch = gpc_get_string( 'master_branch' );
 
 		# Clear the access token if client id and secret changed
@@ -424,7 +425,7 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 		$p_repo->info['hub_reponame'] = $f_hub_reponame;
 		$p_repo->info['hub_app_client_id'] = $f_hub_app_client_id;
 		$p_repo->info['hub_app_secret'] = $f_hub_app_secret;
-		$p_repo->info['hub_webhook_secret'] = $f_hub_webhook_secret;
+		#$p_repo->info['hub_webhook_secret'] = $f_hub_webhook_secret;
 		$p_repo->info['master_branch'] = $f_master_branch;
 
 		return $p_repo;
