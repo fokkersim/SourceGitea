@@ -6,6 +6,7 @@
 access_ensure_global_level( plugin_config_get( 'view_threshold' ) );
 $t_can_update = access_has_global_level( plugin_config_get( 'update_threshold' ) );
 
+/** @noinspection PhpIncludeInspection */
 require_once( config_get( 'plugin_path' ) . 'Source/Source.ViewAPI.php' );
 
 $f_changeset_id = gpc_get_int( 'id' );
@@ -14,16 +15,24 @@ $f_offset = gpc_get_int( 'offset', 0 );
 $t_changeset = SourceChangeset::load( $f_changeset_id );
 $t_changeset->load_files();
 $t_changeset->load_bugs();
-bug_cache_array_rows( $t_changeset->bugs );
 
+# Get the list of related bugs the user has access to
+$t_view_bug_threshold = config_get('view_bug_threshold');
+$t_visible_bugs = array_filter(
+	$t_changeset->bugs,
+	function( $p_bug_id ) use ( $t_view_bug_threshold ) {
+		return bug_exists( $p_bug_id)
+			&& access_has_bug_level( $t_view_bug_threshold, $p_bug_id );
+	}
+);
+bug_cache_array_rows( $t_visible_bugs );
 $t_bug_rows = array();
-foreach( $t_changeset->bugs as $t_bug_id ) {
-	$t_bug_row = bug_cache_row( $t_bug_id, false );
-	if ( false === $t_bug_row ) { continue; }
-
-	$t_bug_rows[$t_bug_id] = $t_bug_row;
+foreach( $t_visible_bugs as $t_bug_id ) {
+	/** @noinspection PhpUnhandledExceptionInspection */
+	$t_bug_rows[$t_bug_id] = bug_get_row( $t_bug_id );
 }
-$t_affected_rowspan = count( $t_bug_rows ) + ( $t_can_update ? 1 : 0 );
+
+$t_affected_rowspan = count( $t_visible_bugs ) + ( $t_can_update ? 1 : 0 );
 
 $t_repos = SourceRepo::load_by_changesets( $t_changeset );
 if ( count( $t_repos ) < 1 ) {
@@ -56,34 +65,30 @@ layout_page_begin();
 ?>
 
 <div class="col-md-12 col-xs-12">
-	<div class="space-10"></div>
-
-<?php if ( $t_update_form ) { ?>
-	<form action="<?php echo plugin_page( 'update' ) ?>" method="post">
-	<input type="hidden" name="id" value="<?php echo $t_changeset->id ?>"/>
-	<?php echo form_security_field( 'plugin_Source_update' ) ?>
-<?php } ?>
+<div class="space-10"></div>
 
 <div class="widget-box widget-color-blue2">
-			<div class="widget-header widget-header-small">
-				<h4 class="widget-title lighter">
-					<?php echo string_display_line( $t_repo->name ), ': ', $t_vcs->show_changeset( $t_repo, $t_changeset ) ?>
-				</h4>
-			</div>
+	<div class="widget-header widget-header-small">
+		<h4 class="widget-title lighter">
+			<?php echo string_display_line( $t_repo->name ), ': ', $t_vcs->show_changeset( $t_repo, $t_changeset ) ?>
+		</h4>
+	</div>
 
-			<div class="widget-body">
-				<div class="widget-main no-padding">
-					<div class="table-responsive">
-						<div class="widget-toolbox padding-8 clearfix">
-						<?php if ( $t_url = $t_vcs->url_changeset( $t_repo, $t_changeset ) ) { ?>
-							<a class="btn btn-xs btn-primary btn-white btn-round" href="<?php echo $t_url ?>">
-								<?php echo plugin_lang_get( 'diff', 'Source' ) ?>
-							</a>
-						<?php } ?>
-							<a class="btn btn-xs btn-primary btn-white btn-round" href="<?php echo plugin_page( 'list' ) . '&id=' . $t_repo->id . '&offset=' . $f_offset ?>">
-								<?php echo plugin_lang_get( 'back_repo' ) ?>
-							</a>
-						</div>
+	<div class="widget-body">
+		<div class="widget-main no-padding">
+			<div class="table-responsive">
+				<div class="widget-toolbox padding-8 clearfix">
+<?php
+	if ( $t_url = $t_vcs->url_changeset( $t_repo, $t_changeset ) ) {
+		print_extra_small_button($t_url, plugin_lang_get('diff', 'Source') );
+		echo ' ';
+	}
+	print_extra_small_button(
+		plugin_page( 'list' ) . '&id=' . $t_repo->id . '&offset=' . $f_offset,
+		plugin_lang_get( 'back_repo' )
+	);
+?>
+				</div>
 
 <table class="table table-striped table-bordered table-condensed">
 <tbody>
@@ -95,7 +100,7 @@ layout_page_begin();
 <th class="category"><?php echo plugin_lang_get( 'timestamp' ) ?></th>
 <th class="category"><?php echo plugin_lang_get( 'parent' ) ?></th>
 <?php if ( $t_use_porting ) { ?>
-<th class="category"><?php echo plugin_lang_get( 'ported' ) ?></th>
+<th class="category"><label for="ported"><?php echo plugin_lang_get( 'ported' ) ?></label></th>
 <?php } ?>
 </tr>
 
@@ -103,33 +108,73 @@ layout_page_begin();
 <td class="center"><?php Source_View_Author( $t_changeset ) ?></td>
 <td class="center"><?php Source_View_Committer( $t_changeset ) ?></td>
 <td class="center"><?php echo string_display_line( $t_changeset->branch ) ?></td>
-<td class="center"><?php echo string_display_line( $t_changeset->timestamp ) ?></td>
-<td class="center"><?php if ( $t_changeset_parent ) { print_link( plugin_page( 'view' ) . '&id=' . $t_changeset_parent->id, $t_vcs->show_changeset( $t_repo, $t_changeset_parent ) ); } ?></td>
-<?php if ( $t_use_porting ) { ?>
-<td class="center">
-<?php if ( $t_update_form ) { ?>
-<select name="ported">
-<option value="" <?php check_selected( "", $t_changeset->ported ) ?>><?php echo plugin_lang_get( 'pending' ) ?></option>
-<option value="0" <?php check_selected( "0", $t_changeset->ported ) ?>><?php echo plugin_lang_get( 'na' ) ?></option>
-<option value="">--</option>
-<?php foreach( $t_repo->branches as $t_branch ) { if ( $t_branch == $t_changeset->branch ) { continue; } ?>
-<option value="<?php echo string_attribute( $t_branch ) ?>" <?php check_selected( $t_branch, $t_changeset->ported ) ?>><?php echo string_display_line( $t_branch ) ?></option>
-<?php } ?>
-</select>
-<input type="submit" value="<?php echo plugin_lang_get( 'update' ) ?>"/>
-<?php } else {
-	echo $t_changeset->ported == "0" ? plugin_lang_get( 'na' ) : $t_changeset->ported == "" ? plugin_lang_get( 'pending' ) : string_display_line( $t_changeset->ported );
-} ?>
+<td class="center"><?php echo string_display_line( $t_changeset->getLocalTimestamp() ) ?></td>
+
+<td class="center"><?php
+	if ( $t_changeset_parent ) {
+		print_link(
+			plugin_page( 'view' ) . '&id=' . $t_changeset_parent->id,
+			$t_vcs->show_changeset( $t_repo, $t_changeset_parent )
+		);
+	}
+?>
 </td>
-<?php } ?>
+
+<?php
+	if ( $t_use_porting ) {
+?>
+<td class="center">
+<?php
+		if ( $t_update_form ) {
+?>
+	<form action="<?php echo plugin_page( 'update' ) ?>" method="post">
+		<input type="hidden" name="id" value="<?php echo $t_changeset->id ?>"/>
+		<?php echo form_security_field( 'plugin_Source_update' ) ?>
+		<select id="ported" name="ported">
+			<option value="" <?php check_selected( "", $t_changeset->ported ) ?>>
+				<?php echo plugin_lang_get( 'pending' ) ?>
+			</option>
+			<option value="0" <?php check_selected( "0", $t_changeset->ported ) ?>>
+				<?php echo plugin_lang_get( 'na' ) ?>
+			</option>
+			<option value="">--</option>
+<?php
+			foreach( $t_repo->branches as $t_branch ) {
+				if ( $t_branch == $t_changeset->branch ) {
+					continue;
+				}
+?>
+			<option value="<?php echo string_attribute( $t_branch ) ?>" <?php check_selected( $t_branch, $t_changeset->ported ) ?>>
+				<?php echo string_display_line( $t_branch ) ?>
+			</option>
+<?php
+			}
+?>
+		</select>
+		<button class="btn btn-sm btn-primary btn-white btn-round"><?php echo plugin_lang_get( 'update' ) ?></button>
+	</form>
+<?php
+		} else {
+			switch( $t_changeset->ported ) {
+				case '0':
+					echo plugin_lang_get( 'na' );
+					break;
+				case '':
+					echo plugin_lang_get( 'pending' );
+					break;
+				default:
+					echo string_display_line( $t_changeset->ported );
+			}
+		}
+?>
+</td>
+<?php
+	}
+?>
 </tr>
 
-<?php if ( $t_update_form ) { ?>
-</form>
-<?php } ?>
-
 <?php if ( $t_affected_rowspan > 0 ) { ?>
-<tr class="spacer" />
+<tr class="spacer"></tr>
 
 <tr>
 <th class="category" rowspan="<?php echo $t_affected_rowspan ?>">
@@ -140,15 +185,17 @@ layout_page_begin();
 <?php
 $t_first = true;
 $t_user_id = auth_get_current_user_id();
+$t_security_token = form_security_param( 'plugin_Source_detach' );
+
 foreach ( $t_bug_rows as $t_bug_id => $t_bug_row ) {
-	$t_color_class = html_get_status_css_class(
+	$t_color_class = html_get_status_css_fg(
 		$t_bug_row['status'],
 		$t_user_id,
 		$t_bug_row['project_id']
 	);
 	$t_status_description = get_enum_element(
 		'status',
-		bug_get_field( $t_bug_id, 'status' ),
+		$t_bug_row['status'],
 		$t_bug_row['project_id']
 	);
 
@@ -166,11 +213,10 @@ foreach ( $t_bug_rows as $t_bug_id => $t_bug_row ) {
 </td>
 <?php if ( $t_can_update ) { ?>
 <td class="center"><?php
+	$t_param = array( 'id' => $t_changeset->id, 'bug_id' => $t_bug_id);
 	print_small_button(
 		plugin_page( 'detach' )
-			. '&id=' . $t_changeset->id
-			. '&bug_id=' . $t_bug_id
-			. form_security_param( 'plugin_Source_detach' ),
+		. '&' . http_build_query( $t_param ) . $t_security_token,
 		plugin_lang_get( 'detach' )
 	) ?>
 </td>
@@ -179,7 +225,8 @@ foreach ( $t_bug_rows as $t_bug_id => $t_bug_row ) {
 
 <?php
 	$t_first = false;
-}
+} # foreach
+
 if ( $t_can_update ) {
 	if ( !$t_first ) { ?>
 <tr>
@@ -188,15 +235,15 @@ if ( $t_can_update ) {
 <form action="<?php echo plugin_page( 'attach' )  ?>" method="post">
 	<?php echo form_security_field( 'plugin_Source_attach' ) ?>
 	<input type="hidden" name="id" value="<?php echo $t_changeset->id ?>"/>
-	<?php echo plugin_lang_get( 'attach_to_issue' ) ?>
-	<input type="text" class="input-sm" name="bug_ids" size="15"/>
-	<input type="submit" class="btn btn-sm btn-primary btn-white btn-round" value="<?php echo plugin_lang_get( 'attach' ) ?>"/>
+	<label for="bug_ids"><?php echo plugin_lang_get( 'attach_to_issue' ) ?></label>
+	<input id="bug_ids" name="bug_ids" type="text" class="input-sm" size="15"/>
+	<button class="btn btn-sm btn-primary btn-white btn-round"><?php echo plugin_lang_get( 'attach' ) ?></button>
 </form>
 </td>
 </tr>
 <?php } ?>
 
-<tr class="spacer" />
+<tr class="spacer"></tr>
 
 <tr>
 <th class="category" rowspan="<?php echo count( $t_changeset->files ) + 1 ?>">
@@ -209,12 +256,17 @@ if ( $t_can_update ) {
 <tr>
 <td class="small" colspan="<?php echo $t_columns-2 ?>"><?php echo string_display_line( $t_vcs->show_file( $t_repo, $t_changeset, $t_file ) ) ?></td>
 <td class="center">
-	<a class="btn btn-xs btn-primary btn-white btn-round" href="<?php echo $t_vcs->url_diff( $t_repo, $t_changeset, $t_file ) ?>">
-		<?php echo plugin_lang_get( 'diff', 'Source' ) ?>
-	</a>
-	<a class="btn btn-xs btn-primary btn-white btn-round" href="<?php echo $t_vcs->url_file( $t_repo, $t_changeset, $t_file ) ?>">
-		<?php echo plugin_lang_get( 'file', 'Source' ) ?>
-	</a>
+<?php
+	print_extra_small_button(
+		$t_vcs->url_diff( $t_repo, $t_changeset, $t_file ),
+		plugin_lang_get( 'diff', 'Source' )
+	);
+	echo ' ';
+	print_extra_small_button(
+		$t_vcs->url_file( $t_repo, $t_changeset, $t_file ),
+		plugin_lang_get( 'file', 'Source' )
+	);
+?>
 </td>
 </tr>
 
@@ -222,22 +274,21 @@ if ( $t_can_update ) {
 
 </tbody>
 </table>
-				</div>
 			</div>
-			<?php if ( $t_can_update ) { ?>
-				<div class="widget-toolbox padding-8 clearfix">
-					<form action="<?php echo helper_mantis_url( 'plugin.php' ) ?>" method="get">
-					<input type="hidden" name="page" value="Source/edit_page"/>
-					<input type="hidden" name="id" value="<?php echo $t_changeset->id ?>"/>
-					<input type="submit" class="btn btn-primary btn-white btn-round" value="<?php echo plugin_lang_get( 'edit' ) ?>" />
-					</form>
-				</div>
-			<?php } ?>
 		</div>
+		<?php if ( $t_can_update ) { ?>
+			<div class="widget-toolbox padding-8 clearfix">
+				<form action="<?php echo helper_mantis_url( 'plugin.php' ) ?>" method="get">
+				<input type="hidden" name="page" value="Source/edit_page"/>
+				<input type="hidden" name="id" value="<?php echo $t_changeset->id ?>"/>
+					<button class="btn btn-primary btn-white btn-round"><?php echo plugin_lang_get( 'edit' ) ?></button>
+				</form>
+			</div>
+		<?php } ?>
+	</div>
 </div>
 
 </div>
 
 <?php
 layout_page_end();
-

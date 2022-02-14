@@ -10,22 +10,55 @@ require_once( 'MantisSourceBase.class.php' );
  * @author John Reese
  */
 abstract class MantisSourcePlugin extends MantisSourceBase {
+
+	/**
+	 * @var string Plugin Version string - MUST BE SET BY VCS PLUGIN
+	 */
+	const PLUGIN_VERSION = '0';
+
+	/**
+	 * @var string Minimum framework version - MUST BE SET BY VCS PLUGIN
+	 */
+	const FRAMEWORK_VERSION_REQUIRED = '0';
+
+	/**
+	 * @var string A short, unique, lowercase string representing the plugin's source control type.
+	 */
+	public $type = null;
+
+	/**
+	 * @var bool Override this to "true" if there are configuration options for the vcs plugin.
+	 */
+	public $configuration = false;
+
+	/**
+	 * Standard plugin registration.
+	 *
+	 * Child plugins are expected to override the following class constants
+	 * - PLUGIN_VERSION
+	 * - FRAMEWORK_VERSION_REQUIRED
+	 */
+	public function register() {
+		$this->name = plugin_lang_get( 'title' );
+		$this->description = plugin_lang_get( 'description' );
+
+		$this->version = static::PLUGIN_VERSION;
+		$this->requires = array(
+			'MantisCore' => static::MANTIS_VERSION,
+			'Source' => static::FRAMEWORK_VERSION_REQUIRED,
+		);
+
+		$this->author = 'John Reese';
+		$this->contact = 'john@noswap.com';
+		$this->url = 'https://github.com/mantisbt-plugins/source-integration/';
+	}
+
 	public function hooks() {
 		return array(
 			'EVENT_SOURCE_INTEGRATION'		=> 'integration',
 			'EVENT_SOURCE_PRECOMMIT'		=> '_precommit',
 		);
 	}
-
-	/**
-	 * A short, unique, lowercase string representing the plugin's source control type.
-	 */
-	public $type = null;
-
-	/**
-	 * Override this to "true" if there are configuration options for the vcs plugin.
-	 */
-	public $configuration = false;
 
 	/**
 	 * Define the VCS's ability to handle links to Pull Requests.
@@ -67,7 +100,7 @@ abstract class MantisSourcePlugin extends MantisSourceBase {
 	 * @param object Changeset
 	 * @return string URL
 	 */
-	abstract public function url_repo( $p_repo, $t_changeset=null );
+	abstract public function url_repo( $p_repo, $p_changeset=null );
 
 	/**
 	 * Get a URL to a diff view of the given changeset.
@@ -103,13 +136,18 @@ abstract class MantisSourcePlugin extends MantisSourceBase {
 
 	/**
 	 * Process form elements for custom repository data.
-	 * @param object Repository
+	 * @param SourceRepo Repository
 	 */
 	public function update_repo( $p_repo ) {}
 
 	/**
 	 * Output form elements for configuration options.
-	 * The first div should have class 'spacer'
+	 *
+	 * They are displayed at the bottom of the plugin's config page
+	 * (see manage_config_page.php). The first row should have class 'spacer',
+	 * and the function should output an even number of rows (including the
+	 * spacer row), to ensure that the VCS-specific section always start on an
+	 * even row (i.e. with white background). Add an empty row if needed.
 	 */
 	public function update_config_form() {}
 
@@ -121,7 +159,7 @@ abstract class MantisSourcePlugin extends MantisSourceBase {
 	/**
 	 * If necessary, check GPC inputs to determine if the checkin data
 	 * is for a repository handled by this VCS type.
-	 * @return array Array with "repo"=>Repository, "data"=>...
+	 * @return array|null Array with "repo"=>Repository, "data"=>...
 	 */
 	public function precommit() {}
 
@@ -172,12 +210,12 @@ abstract class MantisSourcePlugin extends MantisSourceBase {
  * to execute the event.
  */
 class SourceGenericPlugin extends MantisSourcePlugin {
+	public $type = 'generic';
+
 	function register() {
 		$this->name = plugin_lang_get( 'title', 'Source' );
 		$this->version = self::FRAMEWORK_VERSION;
 	}
-
-	public $type = 'generic';
 
 	function show_type() {
 		return 'Generic';
@@ -191,7 +229,7 @@ class SourceGenericPlugin extends MantisSourcePlugin {
 		return $p_file->filename . ' (' . $p_file->revision . ')';
 	}
 
-	function url_repo( $p_repo, $t_changeset=null ) {
+	function url_repo( $p_repo, $p_changeset=null ) {
 		return $p_repo->url;
 	}
 

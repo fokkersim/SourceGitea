@@ -49,16 +49,19 @@ if ( !$t_valid && ON == plugin_config_get( 'remote_checkin' ) ) {
 	}
 }
 
-if ( gpc_get_string( 'api_key' ) == plugin_config_get( 'api_key' ) && trim(plugin_config_get( 'api_key' )) != '') {
+
+$t_api_key = plugin_config_get( 'api_key' );
+if ( gpc_get_string( 'api_key' ) == $t_api_key && trim( $t_api_key ) != '') {
 	$t_valid = true;
 }
 
 # Not validated by this point gets the boot!
 if ( !$t_valid ) {
+	http_response_code( HTTP_STATUS_BAD_REQUEST );
 	die( plugin_lang_get( 'invalid_checkin_url' ) );
 }
 
-# Let plugins try to intepret POST data before we do
+# Let plugins try to interpret POST data before we do
 $t_predata = event_signal( 'EVENT_SOURCE_PRECOMMIT' );
 
 # Expect plugin data in form of array( repo_name, data )
@@ -73,6 +76,7 @@ if ( is_array( $t_predata ) && count( $t_predata ) == 2 ) {
 }
 # Repo not found
 if ( is_null( $t_repo ) ) {
+	http_response_code( HTTP_STATUS_BAD_REQUEST );
 	die( plugin_lang_get( 'invalid_repo' ) );
 }
 
@@ -83,6 +87,7 @@ $t_changesets = $t_vcs->commit( $t_repo, $f_data );
 
 # Changesets couldn't be loaded apparently
 if ( !is_array( $t_changesets ) ) {
+	http_response_code( HTTP_STATUS_BAD_REQUEST );
 	die( plugin_lang_get( 'invalid_changeset' ) );
 }
 
@@ -92,4 +97,3 @@ if ( count( $t_changesets ) < 1 ) {
 }
 
 Source_Process_Changesets( $t_changesets );
-

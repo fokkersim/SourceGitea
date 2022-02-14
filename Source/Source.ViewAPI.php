@@ -5,15 +5,23 @@
 
 /**
  * Display a list of changeset objects in tabular format.
+ *
  * Assumes that a table with four columns has already been defined.
- * @param array Changeset objects
- * @param array Repository objects
+ *
+ * @param SourceChangeset[] $p_changesets
+ * @param array|SourceRepo  $p_repos      List of repositories, if null will be
+ *                                        loaded based on changesets
+ * @param bool              $p_show_repos
  */
 function Source_View_Changesets( $p_changesets, $p_repos=null, $p_show_repos=true ) {
 	if ( !is_array( $p_changesets ) ) {
 		return;
 	}
 
+	plugin_push_current( 'Source' );
+	$t_can_update = access_has_global_level( plugin_config_get( 'update_threshold' ) );
+	plugin_pop_current();
+	
 	if ( is_null( $p_repos ) || !is_array( $p_repos ) ) {
 		$t_repos = SourceRepo::load_by_changesets( $p_changesets );
 	} else {
@@ -29,43 +37,86 @@ function Source_View_Changesets( $p_changesets, $p_repos=null, $p_show_repos=tru
 		$t_changeset->load_bugs();
 		$t_changeset->load_files();
 
+		bug_cache_array_rows( $t_changeset->bugs );
+
 		$t_author = Source_View_Author( $t_changeset, false );
 		$t_committer = Source_View_Committer( $t_changeset, false );
-		?>
-
+?>
 <tr>
-
-<td class="category" width="25%" rowspan="<?php echo count( $t_changeset->files ) + 1 ?>">
+<td class="category width-25" rowspan="<?php echo count( $t_changeset->files ) + 1 ?>">
 	<a id="<?php echo $t_changeset->revision; ?>"></a>
-	<p class="no-margin" name="changeset<?php echo $t_changeset->id ?>"><?php echo string_display(
-		( $p_show_repos ? $t_repo->name . ': ' : '' ) .
-		$t_vcs->show_changeset( $t_repo, $t_changeset )
-		) ?></p>
+	<p class="no-margin"><?php
+		echo string_display(
+			( $p_show_repos ? $t_repo->name . ': ' : '' )
+			. $t_vcs->show_changeset( $t_repo, $t_changeset )
+		)
+	?></p>
 	<p class="no-margin small lighter">
-		<i class="fa fa-clock-o grey"></i> <?php echo string_display_line( $t_changeset->timestamp ) ?>
+		<i class="fa fa-clock-o grey"></i>
+		<?php echo string_display_line( $t_changeset->getLocalTimestamp() ) ?>
 	</p>
 	<p class="no-margin lighter">
-		<i class="fa fa-user grey"></i> <?php echo $t_author ?></a>
+		<i class="fa fa-user grey"></i> <?php echo $t_author ?>
 	</p>
-	<?php if ( $t_committer && $t_committer != $t_author ) { ?><br/><span class="small"><?php echo plugin_lang_get( 'committer', 'Source' ), ': ', $t_committer ?></span><?php } ?>
-	<?php if ( $t_use_porting ) { ?>
-		<p class="no-margin small lighter"><?php echo plugin_lang_get( 'ported', 'Source' ), ': ',
-		( $t_changeset->ported ? string_display_line( $t_changeset->ported ) :
-			( is_null( $t_changeset->ported ) ? plugin_lang_get( 'pending', 'Source' ) : plugin_lang_get( 'na', 'Source' ) ) ) ?>
-		</p>
-	<?php } ?>
-		<a class="btn btn-xs btn-primary btn-white btn-round" href="<?php echo plugin_page( 'view', false, 'Source' ) . '&id=' . $t_changeset->id ?>">
-			<?php echo plugin_lang_get( 'details', 'Source' ) ?>
-		</a>
-		<?php
-		if ( $t_url = $t_vcs->url_changeset( $t_repo, $t_changeset ) ) { ?>
-		<a class="btn btn-xs btn-primary btn-white btn-round" href="<?php echo $t_url ?>">
-			<?php echo plugin_lang_get( 'diff', 'Source' ) ?>
-		</a>
-		<?php }
-		?>
+<?php
+		if( $t_committer && $t_committer != $t_author ) {
+?>
+	<br>
+	<span class="small">
+		<?php echo plugin_lang_get( 'committer', 'Source' ), ': ', $t_committer ?>
+	</span>
+<?php
+		}
+
+		if( $t_use_porting ) {
+?>
+	<p class="no-margin small lighter"><?php
+		echo plugin_lang_get( 'ported', 'Source' ), ': ',
+			$t_changeset->ported
+				? string_display_line( $t_changeset->ported )
+				: ( is_null( $t_changeset->ported )
+					? plugin_lang_get( 'pending', 'Source' )
+					: plugin_lang_get( 'na', 'Source' )
+				)
+	?></p>
+<?php
+		}
+
+		print_link_button(
+			plugin_page( 'view', false, 'Source' ) . '&id=' . $t_changeset->id,
+			plugin_lang_get( 'details', 'Source' ),
+			'btn-xs'
+		);
+
+		if( $t_url = $t_vcs->url_changeset( $t_repo, $t_changeset ) ) {
+			echo "\n";
+			print_link_button(
+				$t_url,
+				plugin_lang_get( 'diff', 'Source' ),
+				'btn-xs'
+			);
+		}
+?>
 </td>
-<td colspan="2"><?php
+
+<?php
+		# Build list of related issues the user has access to, with link
+		$t_view_bug_threshold = config_get('view_bug_threshold');
+		$t_bugs = array_map(
+			'string_get_bug_view_link',
+			array_filter(
+				$t_changeset->bugs,
+				function( $p_bug_id ) use ( $t_view_bug_threshold ) {
+					return bug_exists( $p_bug_id )
+						&& access_has_bug_level( $t_view_bug_threshold, $p_bug_id );
+				}
+			)
+		);
+
+		# Only display the table cell for attached issues if necessary
+		$t_show_linked_bugs_column = $t_bugs || $t_can_update;
+?>
+<td colspan=<?php echo $t_show_linked_bugs_column ? 2 : 3 ?>><?php
 	# The commit message is manually transformed (adding href, bug and bugnote
 	# links + nl2br) instead of calling string_display_links(), which avoids
 	# unwanted html tags processing by the MantisCoreFormatting plugin.
@@ -79,60 +130,77 @@ function Source_View_Changesets( $p_changesets, $p_repos=null, $p_show_repos=tru
 		) ) ) );
 	?>
 </td>
+
+<?php
+		if( $t_show_linked_bugs_column ) {
+?>
 <td>
 <?php
-		# Build list of related issues with link
-		$t_bugs = array_map( 'string_get_bug_view_link', $t_changeset->bugs );
-
-		if( $t_bugs ) {
-			echo '<span class="bold">',
-				plugin_lang_get( 'affected_issues', 'Source' ),
-				'</span><br>';
-			echo '<span>', implode( ', ', $t_bugs ), '</span>';
-		} else {
+			if( $t_bugs ) {
+				echo '<span class="bold">',
+					plugin_lang_get( 'affected_issues', 'Source' ),
+					'</span><br>';
+				echo '<span>', implode( ', ', $t_bugs ), '</span>';
+			} elseif( $t_can_update ) {
 ?>
-		<form action="<?php echo plugin_page( 'attach' )  ?>" method="post">
-			<?php echo form_security_field( 'plugin_Source_attach' ) ?>
-			<input type="hidden" name="id" value="<?php echo $t_changeset->id ?>"/>
-			<input type="hidden" name="redirect" value="<?php echo $t_changeset->revision ?>"/>
+	<form action="<?php echo plugin_page( 'attach' )  ?>" method="post">
+		<?php echo form_security_field( 'plugin_Source_attach' ) ?>
+		<input type="hidden" name="id" value="<?php echo $t_changeset->id ?>"/>
+		<input type="hidden" name="redirect" value="<?php echo $t_changeset->revision ?>"/>
+		<label>
 			<?php echo plugin_lang_get( 'attach_to_issue' ) ?><br>
 			<input type="text" class="input-sm" name="bug_ids" size="12"/>
-			<input type="submit"
-				   class="btn btn-sm btn-primary btn-white btn-round"
-				   value="<?php echo plugin_lang_get( 'attach' ) ?>" />
-		</form>
+		</label>
+		<input type="submit"
+			   class="btn btn-sm btn-primary btn-white btn-round"
+			   value="<?php echo plugin_lang_get( 'attach' ) ?>" />
+	</form>
 <?php
+			}
 		}
 ?>
 </td>
-</tr>
 
-		<?php foreach ( $t_changeset->files as $t_file ) { ?>
-<tr>
-<td class="small" colspan="2"><?php echo string_display_line( $t_vcs->show_file( $t_repo, $t_changeset, $t_file ) ) ?></td>
-<td class="center" width="15%">
-		<?php
-		if ( $t_url = $t_vcs->url_diff( $t_repo, $t_changeset, $t_file ) ) { ?>
-			<a class="btn btn-xs btn-primary btn-white btn-round" href="<?php echo $t_url ?>">
-				<?php echo plugin_lang_get( 'diff', 'Source' ) ?>
-			</a>
-		<?php }
-		if ( $t_url = $t_vcs->url_file( $t_repo, $t_changeset, $t_file ) ) { ?>
-			<a class="btn btn-xs btn-primary btn-white btn-round" href="<?php echo $t_url ?>">
-				<?php echo plugin_lang_get( 'file', 'Source' ) ?>
-			</a>
-		<?php }
-		?></td>
 </tr>
-		<?php } ?>
-		<?php
-	}
+<?php
+		foreach( $t_changeset->files as $t_file ) {
+?>
+<tr>
+<td class="small" colspan="2">
+	<?php echo string_display_line( $t_vcs->show_file( $t_repo, $t_changeset, $t_file ) ) ?>
+</td>
+<td class="center width-13">
+<?php
+			if( $t_url = $t_vcs->url_diff( $t_repo, $t_changeset, $t_file ) ) {
+				print_link_button(
+					$t_url,
+					plugin_lang_get( 'diff', 'Source' ),
+					'btn-xs'
+				);
+			}
+			echo "\n";
+			if( $t_url = $t_vcs->url_file( $t_repo, $t_changeset, $t_file ) ) {
+				print_link_button(
+					$t_url,
+					plugin_lang_get( 'file', 'Source' ),
+					'btn-xs'
+				);
+			}
+?>
+</td>
+</tr>
+<?php
+		} # end foreach changeset files
+	} # end foreach changesets
 }
 
 /**
  * Display the author information for a changeset.
- * @param object Changeset object
- * @param boolean Echo information
+ *
+ * @param SourceChangeset $p_changeset Changeset object
+ * @param bool            $p_echo      Echo information if true, returns it otherwise
+ *
+ * @return string|void
  */
 function Source_View_Author( $p_changeset, $p_echo=true ) {
 	$t_author_name = !is_blank( $p_changeset->author ) ? string_display_line( $p_changeset->author ) : false;
@@ -158,8 +226,11 @@ function Source_View_Author( $p_changeset, $p_echo=true ) {
 
 /**
  * Display the committer information for a changeset.
- * @param object Changeset object
- * @param boolean Echo information
+ *
+ * @param SourceChangeset $p_changeset Changeset object
+ * @param bool            $p_echo      Echo information if true, returns it otherwise
+ *
+ * @return string|void
  */
 function Source_View_Committer( $p_changeset, $p_echo=true ) {
 	$t_committer_name = !is_blank( $p_changeset->committer ) ? string_display_line( $p_changeset->committer ) : false;
@@ -208,8 +279,8 @@ function Source_View_Pagination( $p_link, $p_current, $p_count, $p_perpage = 25 
 			} elseif( $p_page == $p_current ) {
 				return "<strong>$p_page</strong>";
 			} else {
-				$page_button = '<a class="btn btn-xs btn-primary btn-white btn-round" href="'. $p_link . $p_page .'">'.$p_text.'</a>';
-				return $page_button;
+				return '<a class="btn btn-xs btn-primary btn-white btn-round" href="'
+					. $p_link . $p_page .'">' . $p_text . '</a>';
 			}
 		};
 

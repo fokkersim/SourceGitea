@@ -736,7 +736,7 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 		}
 	}
 
-	public static function oauth_get_access_token( $p_repo, $p_code ) {
+	public static function oauth_get_access_token( $p_repo, $p_code, $p_refresh = false ) {
 		# build the GitTea URL & POST data
 		$f_tea_root = $p_repo->info['tea_root'];
 		$t_url = "$f_tea_root/login/oauth/access_token";
@@ -744,11 +744,20 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 		$t_redirect_uri = config_get('path')
 			. plugin_page( 'oauth_authorize', true) . '&'
 			. http_build_query( array( 'id' => $p_repo->id ) );
-		$t_post_data = array( 'client_id' => $p_repo->info['hub_app_client_id'],
+		if( $p_refresh === true) {
+			$t_post_data = array( 'client_id' => $p_repo->info['hub_app_client_id'],
 			'client_secret' => $p_repo->info['hub_app_secret'],
-			'code' => $p_code,
-			'grant_type' => 'authorization_code',
+			'refresh_token' => $p_code,
+			'grant_type' => 'refresh_token',
 			'redirect_uri' => $t_redirect_uri );
+		}
+		else {
+			$t_post_data = array( 'client_id' => $p_repo->info['hub_app_client_id'],
+				'client_secret' => $p_repo->info['hub_app_secret'],
+				'code' => $p_code,
+				'grant_type' => 'authorization_code',
+				'redirect_uri' => $t_redirect_uri );
+		}
 		#trigger_error("url = $t_url, data = ". implode(", ", $t_post_data ), E_USER_ERROR);
 		$t_data = self::url_post( $t_url, $t_post_data );
 		$t_access_token = '';
@@ -834,7 +843,7 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 		if (self::check_oauth_timeout( $p_repo ) ) {
 			echo "Authorization token timed out... renew\n";
 			if ( array_key_exists('refresh_token', $p_repo->info) === true ) {
-				$t_authorized = self::oauth_get_access_token( $p_repo, $p_repo->info['refresh_token']);
+				$t_authorized = self::oauth_get_access_token( $p_repo, $p_repo->info['refresh_token'], true);
 				if(!$t_authorized)
 				{
 					echo "Error access token refresh via oath failed\n";

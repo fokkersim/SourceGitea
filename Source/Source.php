@@ -36,7 +36,7 @@ class SourcePlugin extends MantisSourceBase {
 	 * <rev>  = changeset revision ID (e.g. SVN rev number, GIT SHA, etc.)
 	 * The match is not case-sensitive.
 	 */
-	const CHANGESET_LINKING_REGEX = '/(?:(?<=^|\s)([cdsvp]?):([^:\s][^:\n\t]*):([^:\s]+):)/i';
+	const CHANGESET_LINKING_REGEX = '/(?:(?<=^|[^\w])([cdsvp]?):([^:\s][^:\n\t]*):([^:\s]+):)/i';
 
 	function register() {
 		$this->name = plugin_lang_get( 'title' );
@@ -58,6 +58,7 @@ class SourcePlugin extends MantisSourceBase {
 			'show_repo_link'	=> ON,
 			'show_search_link'	=> OFF,
 			'show_repo_stats'	=> ON,
+			'show_file_stats'	=> OFF,
 
 			'view_threshold'	=> VIEWER,
 			'update_threshold'	=> UPDATER,
@@ -82,6 +83,8 @@ class SourcePlugin extends MantisSourceBase {
 			'bugfix_handler'	=> ON,
 			'bugfix_message'	=> 'Fix committed to $1 branch.',
 			'bugfix_message_view_status'	=> VS_PUBLIC,
+
+			'default_primary_branch' => 'master',
 
 			'remote_checkin'	=> OFF,
 			'checkin_urls'		=> serialize( array( 'localhost' ) ),
