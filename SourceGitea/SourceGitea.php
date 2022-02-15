@@ -148,51 +148,58 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 
 		# Determine if there is already a webhook attached to the plugin's payload URL
 		$t_id = false;
-		foreach( $t_hooks as $t_hook ) {
-			if(   $t_hook->type == 'gitea' && $t_hook->config->url == $t_payload_url ) {
-				$t_id = $t_hook->id;
-				break;
+		if(!empty( $t_hooks )) {
+			foreach( $t_hooks as $t_hook ) {
+				if(   $t_hook->type == 'gitea' && $t_hook->config->url == $t_payload_url ) {
+					$t_id = $t_hook->id;
+					break;
+				}
+			}
+
+			if( $t_id ) {
+				# Webhook already exists for this URL
+				# Set the Gitea URL so user can easily link to it
+				$f_tea_root = $t_repo->info['tea_root'];
+				$t_hook->web_url = "$f_tea_root/$t_username/$t_reponame/settings/hooks/" . $t_hook->id;
+				return $p_response
+					->withStatus( HTTP_STATUS_CONFLICT,
+						plugin_lang_get( 'webhook_exists', 'SourceGitea' ) )
+					->withJson( $t_hook );
 			}
 		}
-
-		if( $t_id ) {
-			# Webhook already exists for this URL
-			# Set the Gitea URL so user can easily link to it
-			$f_tea_root = $t_repo->info['tea_root'];
-			$t_hook->web_url = "$f_tea_root/$t_username/$t_reponame/settings/hooks/" . $t_hook->id;
-			return $p_response
-				->withStatus( HTTP_STATUS_CONFLICT,
-					plugin_lang_get( 'webhook_exists', 'SourceGitea' ) )
-				->withJson( $t_hook );
-		}
-
 		# Create new webhook
-		try {
+		#try {
 			$t_payload = array(
-				'active' => 'true',
+				'active' => true,
 				'branch_filter' => '*',
-				'events' => 'push',
 				'config' => array(
 					'url' => $t_payload_url,
 					'content_type' => 'json',
 				),
+				'events' => array(
+					'push'
+				),
 				'type' => 'gitea'
 			);
-			# Authentication missing here
-			$t_access_token = $t_repo->info['access_token'];
-			$t_gitea_response = $t_gitea_api->post( "repos/$t_username/$t_reponame/hooks?access_token=$t_access_token",
-				array( GuzzleHttp\RequestOptions::JSON => $t_payload )
-			);
-		}
-		catch( GuzzleHttp\Exception\ClientException $e ) {
-			return $e->getResponse();
-		}
+			$t_access_token = $t_repo->info['hub_app_access_token'];
+			$f_tea_root = $t_repo->info['tea_root'];
+			$t_uri = "$f_tea_root/api/v1/repos/$t_username/$t_reponame/hooks?token=$t_access_token";
+			#return $p_response->withStatus( HTTP_STATUS_BAD_REQUEST, $t_uri);
+			#$t_gitea_response = $t_gitea_api->post( "repos/$t_username/$t_reponame/hooks?token=$t_access_token",
+			#	array( GuzzleHttp\RequestOptions::JSON => $t_payload )
+			#);
+			$data = SourceGiteaPlugin::url_post_json($t_uri, $t_payload);
+			#return $p_response->withStatus( HTTP_STATUS_BAD_REQUEST, $data);
+		#}
+		#catch( GuzzleHttp\Exception\ClientException $e ) {
+			#return $e->getResponse();
+		#}
 
 		return $p_response
 			->withStatus( HTTP_STATUS_CREATED,
 				plugin_lang_get( 'webhook_success', 'SourceGitea' ) )
 			->withHeader('Content-type', 'application/json')
-			->write( $t_gitea_response->getBody() );
+			->write( $data );
 	}
 
 	public function show_type() {
@@ -802,6 +809,29 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 		# Use the PHP cURL extension
 		if( function_exists( 'curl_init' ) ) {
 			$t_curl = curl_init( $p_url );
+			curl_setopt( $t_curl, CURLOPT_RETURNTRANSFER, true );
+			curl_setopt( $t_curl, CURLOPT_POST, true );
+			curl_setopt( $t_curl, CURLOPT_POSTFIELDS, $t_post_data );
+
+			$t_data = curl_exec( $t_curl );
+			curl_close( $t_curl );
+
+			return $t_data;
+		} else {
+			# Last resort system call
+			$t_url = escapeshellarg( $p_url );
+			$t_post_data = escapeshellarg( $t_post_data );
+			return shell_exec( 'curl ' . $t_url . ' -d ' . $t_post_data );
+		}
+	}
+
+	public static function url_post_json( $p_url, $p_post_data ) {
+		$t_post_data = json_encode($p_post_data);
+
+		# Use the PHP cURL extension
+		if( function_exists( 'curl_init' ) ) {
+			$t_curl = curl_init( $p_url );
+			curl_setopt($t_curl, CURLOPT_HTTPHEADER, array("Content-Type:application/json", "accept: application/json"));
 			curl_setopt( $t_curl, CURLOPT_RETURNTRANSFER, true );
 			curl_setopt( $t_curl, CURLOPT_POST, true );
 			curl_setopt( $t_curl, CURLOPT_POSTFIELDS, $t_post_data );
