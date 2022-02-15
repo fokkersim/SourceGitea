@@ -7,6 +7,8 @@ system calls ([via shell_exec](https://www.php.net/function.shell-exec)).
 ## Authentication
 OAuth authentication is implemented including token timeout check and refresh request via refresh-token. API token authentication planned for future.
 
+* redirect_uri has to be set to https://yourDomain/mantisbt/plugin.php?page=SourceGitea/oauth_authorize&id=<MANTIS_REPO_ID>
+
 ## Webhook configuration
 
 * Webhook type select "Gitea"

@@ -179,6 +179,7 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 				'type' => 'gitea'
 			);
 			# Authentication missing here
+			$t_access_token = $t_repo->info['access_token'];
 			$t_gitea_response = $t_gitea_api->post( "repos/$t_username/$t_reponame/hooks?access_token=$t_access_token",
 				array( GuzzleHttp\RequestOptions::JSON => $t_payload )
 			);
@@ -548,6 +549,8 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 
 	public function import_full( $p_repo ) {
 		echo '<pre>';
+		$t_username = $p_repo->info['hub_username'];
+		$t_reponame = $p_repo->info['hub_reponame'];
 		$t_branch = $p_repo->info['master_branch'];
 		if ( is_blank( $t_branch ) ) {
 			$t_branch = 'master';
@@ -559,10 +562,6 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 		}
 		else
 		{
-
-			$t_username = $p_repo->info['hub_username'];
-			$t_reponame = $p_repo->info['hub_reponame'];
-
 			#$t_uri = $this->api_uri( $p_repo, "repos/$t_username/$t_reponame/branches" );
 			#$t_json = $this->api_json_url( $p_repo, $t_uri );
 			$t_json = self::url_get_json( $p_repo, "repos/$t_username/$t_reponame/branches" );
@@ -576,7 +575,7 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 			#trigger_error("t_branches = " . implode(",", $t_branches), E_USER_ERROR);
 		}
 		$t_changesets = array();
-
+		#echo "t_branches = " . var_dump($t_branches) . '\n';
 		$t_changeset_table = plugin_table( 'changeset', 'Source' );
 
 		foreach( $t_branches as $t_branch ) {
@@ -586,7 +585,7 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 			$t_result = db_query( $t_query, array( $p_repo->id, $t_branch ), 1 );
 			#echo "t_branch = $t_branch\n";
 			$t_commits_full = self::url_get_json( $p_repo, "repos/$t_username/$t_reponame/commits" . '?' . http_build_query(array('sha' => $t_branch)) ); # The API also accepts branch names as filter here
-			#echo "t_commits_full = " . var_dump($t_commits_full);
+			#echo "t_commits_full = " . var_dump($t_commits_full) . '\n';
 			$t_commits = array_column($t_commits_full, 'sha');
 			if ( db_num_rows( $t_result ) > 0 ) {
 				$t_parent = db_result( $t_result );
@@ -866,6 +865,10 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 				"Authorization: token $t_access_token",
 				'Content-Type: application/json'
 			);
+		}
+		else
+		{
+			echo "Error access_token not found, check authentication\n";
 		}
 		# Use the PHP cURL extension
 		if( function_exists( 'curl_init' ) ) {
