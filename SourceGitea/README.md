@@ -19,6 +19,7 @@ OAuth authentication is implemented including token timeout check and refresh re
 	* Copy Client Id and Client Secret to the repository configuration page in MantisBt
 	* Press "Authenticate" button
 3) Be advised, that if you do a "import full" via the repository management page a oauth refresh of the authentication token is not possible anymore, since the mantis repository id changes. Use "import latest" instead, with exactly the same effect. This is due to the MantisBt Source plugin implementation.
+4) It semms that every repository needs to have its own Gitea OAuth2 Application with corresponding client id and client secret. This is due to the redirect_uri which requires the mantis repository id as a parameter to pass the request code for the access token. Better solutions are highly welcome
 
 ## Webhook configuration
 Gitea webhooks no not support webhook secrets at the moment. Therefore only the MantisBt API key is used in both automatic and manual webhook creation.
