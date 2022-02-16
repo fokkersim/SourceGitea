@@ -9,7 +9,7 @@ $s_plugin_SourceGitea_gitea = 'Gitea';
 $s_plugin_SourceGitea_title = 'Source Gitea Integration';
 $s_plugin_SourceGitea_description = 'Adds Gitea integration to the Source Integration framework.';
 
-$s_plugin_SourceGitea_hub_username = 'Gitea Username';
+$s_plugin_SourceGitea_hub_username = 'Gitea Username<br>or Gitea organization Name';
 $s_plugin_SourceGitea_hub_reponame = 'Gitea Repository Name<br/><span class="small">(no spaces; must match the name as received from the webservice\'s payload)</span>';
 $s_plugin_SourceGitea_hub_app_client_id = 'Gitea Application Client ID<br><span class="small">OAuth access</span>';
 $s_plugin_SourceGitea_hub_app_secret = 'Gitea Application Secret<br><span class="small">OAuth access</span>';

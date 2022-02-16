@@ -9,7 +9,7 @@ $s_plugin_SourceGitea_gitea = 'Gitea';
 $s_plugin_SourceGitea_title = 'Gitea Integration';
 $s_plugin_SourceGitea_description = 'Integration für Gitea über die VCS Basisintegration.';
 
-$s_plugin_SourceGitea_hub_username = 'Gitea Benutzername';
+$s_plugin_SourceGitea_hub_username = 'Gitea Benutzername<br>oder Gitea Organisationsname';
 $s_plugin_SourceGitea_hub_reponame = 'Gitea Projektarchiv<br/><span class="small">(Klein Leerzeichen)</span>';
 $s_plugin_SourceGitea_hub_app_client_id = 'Gitea Application Client ID<br><span class="small">Gitea OAuth</span>';
 $s_plugin_SourceGitea_hub_app_secret = 'Gitea Applikationsgeheimnis';
