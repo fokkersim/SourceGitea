@@ -3,6 +3,7 @@
 # Copyright (c) 2012 John Reese
 # Licensed under the MIT license
 # Gitea API documentation https://try.gitea.io/api/swagger
+# Modifications for Gitea by Andreas Harrer 2022
 
 if ( false === include_once( config_get( 'plugin_path' ) . 'Source/MantisSourceGitBasePlugin.class.php' ) ) {
 	return;
@@ -30,7 +31,7 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 
 		$this->author = 'Andreas Harrer';
 		$this->contact = 'alwaysthreegreens@gmail.com';
-		$this->url = 'https://github.com/mantisbt-plugins/source-integration/';
+		$this->url = 'https://github.com/fokkersim/SourceGitea';
 	}
 
 	public $type = 'gitea';
@@ -131,20 +132,7 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 		$t_payload_url = config_get( 'path' ) . plugin_page( 'checkin', true )
 			. '&api_key=' . plugin_config_get( 'api_key' );
 		# Retrieve existing webhooks
-		try {
-			$t_gitea_api = new \GuzzleHttp\Client();
-			# OK UP TO HERE
-			#return $p_response->withStatus( HTTP_STATUS_BAD_REQUEST, $t_payload_url);
-			#$t_api_uri = SourceGiteaPlugin::api_uri( $t_repo, "repos/$t_username/$t_reponame/hooks" );
-			#$t_response = $t_gitea_api->get( $t_api_uri );
-			$t_response = SourceGiteaPlugin::url_get_json( $t_repo, "repos/$t_username/$t_reponame/hooks" );
-		}
-		catch( GuzzleHttp\Exception\ClientException $e ) {
-			return $e->getResponse();
-		}
-		
-		#$t_hooks = json_decode( (string) $t_response->getBody() );
-		$t_hooks = $t_response;
+		$t_hooks = SourceGiteaPlugin::url_get_json( $t_repo, "repos/$t_username/$t_reponame/hooks" );
 
 		# Determine if there is already a webhook attached to the plugin's payload URL
 		$t_id = false;
@@ -168,33 +156,23 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 			}
 		}
 		# Create new webhook
-		#try {
-			$t_payload = array(
-				'active' => true,
-				'branch_filter' => '*',
-				'config' => array(
-					'url' => $t_payload_url,
-					'content_type' => 'json',
-				),
-				'events' => array(
-					'push'
-				),
-				'type' => 'gitea'
-			);
-			$t_access_token = $t_repo->info['hub_app_access_token'];
-			$f_tea_root = $t_repo->info['tea_root'];
-			$t_uri = "$f_tea_root/api/v1/repos/$t_username/$t_reponame/hooks?token=$t_access_token";
-			#return $p_response->withStatus( HTTP_STATUS_BAD_REQUEST, $t_uri);
-			#$t_gitea_response = $t_gitea_api->post( "repos/$t_username/$t_reponame/hooks?token=$t_access_token",
-			#	array( GuzzleHttp\RequestOptions::JSON => $t_payload )
-			#);
-			$data = SourceGiteaPlugin::url_post_json($t_uri, $t_payload);
-			#return $p_response->withStatus( HTTP_STATUS_BAD_REQUEST, $data);
-		#}
-		#catch( GuzzleHttp\Exception\ClientException $e ) {
-			#return $e->getResponse();
-		#}
-
+		$t_payload = array(
+			'active' => true,
+			'branch_filter' => '*',
+			'config' => array(
+				'url' => $t_payload_url,
+				'content_type' => 'json',
+			),
+			'events' => array(
+				'push'
+			),
+			'type' => 'gitea'
+		);
+		$t_access_token = $t_repo->info['hub_app_access_token'];
+		$f_tea_root = $t_repo->info['tea_root'];
+		$t_uri = "$f_tea_root/api/v1/repos/$t_username/$t_reponame/hooks?token=$t_access_token";
+		$data = SourceGiteaPlugin::url_post_json($t_uri, $t_payload);
+		# TODO Check response to decide if webhook creation was successful
 		return $p_response
 			->withStatus( HTTP_STATUS_CREATED,
 				plugin_lang_get( 'webhook_success', 'SourceGitea' ) )
@@ -386,7 +364,6 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 <tr>
 	<td class="category"><?php echo plugin_lang_get( 'hub_webhook_secret' ) ?></td>
 	<td>
-		<!--<input type="text" name="hub_webhook_secret" maxlength="250" size="40" value="<?php echo string_attribute( $t_hub_webhook_secret ) ?>"/> -->
 		<div id="webhook_create" class="sourcegithub_token hidden">
 			<div class="space-4"></div>
 			<div class="space-4"></div>
@@ -417,7 +394,6 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 		$f_hub_reponame = gpc_get_string( 'hub_reponame' );
 		$f_hub_app_client_id = gpc_get_string( 'hub_app_client_id' );
 		$f_hub_app_secret = gpc_get_string( 'hub_app_secret' );
-		#$f_hub_webhook_secret = gpc_get_string( 'hub_webhook_secret' );
 		$f_master_branch = gpc_get_string( 'master_branch' );
 
 		# Clear the access token if client id and secret changed
@@ -434,7 +410,6 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 		$p_repo->info['hub_reponame'] = $f_hub_reponame;
 		$p_repo->info['hub_app_client_id'] = $f_hub_app_client_id;
 		$p_repo->info['hub_app_secret'] = $f_hub_app_secret;
-		#$p_repo->info['hub_webhook_secret'] = $f_hub_webhook_secret;
 		$p_repo->info['master_branch'] = $f_master_branch;
 
 		return $p_repo;
@@ -449,34 +424,7 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 				$t_uri .= '?access_token='. $t_access_token;
 			}
 		}
-		#trigger_error("t_uri = $t_uri", E_USER_ERROR);
 		return $t_uri;
-	}
-
-	private function api_json_url( $p_repo, $p_url, $p_member = null ) {
-		# Gitea API does not support rate limiting
-		/*
-		static $t_start_time;
-		if ( $t_start_time === null ) {
-			$t_start_time = microtime( true );
-		} else if ( ( microtime( true ) - $t_start_time ) >= 3600.0 ) {
-			$t_start_time = microtime( true );
-		}
-
-		$t_uri = $this->api_uri( $p_repo, 'rate_limit' );
-		$t_json = json_url( $t_uri, 'rate' );
-
-		if ( false !== $t_json && !is_null( $t_json ) ) {
-			if ( $t_json->remaining <= 0 ) {
-				// do we need to do something here?
-			} else if ( $t_json->remaining < ( $t_json->limit / 2 ) ) {
-				$t_time_remaining = 3600.0 - ( microtime( true ) - $t_start_time );
-				$t_sleep_time = ( $t_time_remaining / $t_json->remaining ) * 1000000;
-				usleep( $t_sleep_time );
-			}
-		}
-		*/
-		return json_url( $p_url, $p_member );
 	}
 
 	public function precommit() {
@@ -526,6 +474,7 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 				# Validate payload against webhook secret: checks OK if
 				# - Webhook secret not defined and no signature received from GitHub, OR
 				# - Payload's SHA1 hash salted with Webhook secret matches signature
+				# TODO cleanup and remove secret since not supported by Gitea
 				$t_secret = $t_repo->info['hub_webhook_secret'];
 				$t_valid = ( !$t_secret && !$t_signature )
 					|| $t_signature == hash_hmac('sha1', $f_payload, $t_secret);
@@ -569,20 +518,15 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 		}
 		else
 		{
-			#$t_uri = $this->api_uri( $p_repo, "repos/$t_username/$t_reponame/branches" );
-			#$t_json = $this->api_json_url( $p_repo, $t_uri );
 			$t_json = self::url_get_json( $p_repo, "repos/$t_username/$t_reponame/branches" );
 			$t_branches = array();
-			#trigger_error("t_json = " . implode(",",$t_json), E_USER_ERROR);
 			foreach ($t_json as $t_branch)
 			{
 				$t_branches[] = $t_branch->name;
 				echo "Found branch $t_branch->name ... \n";
 			}
-			#trigger_error("t_branches = " . implode(",", $t_branches), E_USER_ERROR);
 		}
 		$t_changesets = array();
-		#echo "t_branches = " . var_dump($t_branches) . '\n';
 		$t_changeset_table = plugin_table( 'changeset', 'Source' );
 
 		foreach( $t_branches as $t_branch ) {
@@ -590,9 +534,7 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 				WHERE repo_id=" . db_param() . ' AND branch=' . db_param() .
 				' ORDER BY timestamp ASC';
 			$t_result = db_query( $t_query, array( $p_repo->id, $t_branch ), 1 );
-			#echo "t_branch = $t_branch\n";
 			$t_commits_full = self::url_get_json( $p_repo, "repos/$t_username/$t_reponame/commits" . '?' . http_build_query(array('sha' => $t_branch)) ); # The API also accepts branch names as filter here
-			#echo "t_commits_full = " . var_dump($t_commits_full) . '\n';
 			$t_commits = array_column($t_commits_full, 'sha');
 			if ( db_num_rows( $t_result ) > 0 ) {
 				$t_parent = db_result( $t_result );
@@ -604,7 +546,6 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 			}
 			$t_changesets = array_merge( $t_changesets, $this->import_commits( $p_repo, $t_commits, $t_branch ) );
 		}
-		#echo "t_changesets = " . var_dump($t_changesets);
 		echo '</pre>';
 
 		return $t_changesets;
@@ -632,10 +573,7 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 		while( count( $s_parents ) > 0 && $s_counter < 200 ) {
 			$t_commit_id = array_shift( $s_parents );
 			echo "Retrieving $t_commit_id ... ";
-			#$t_uri = $this->api_uri( $p_repo, "repos/$t_username/$t_reponame/commits/$t_commit_id" );
-			#$t_json = $this->api_json_url( $p_repo, $t_uri );
 			$t_json = self::url_get_json( $p_repo, "repos/$t_username/$t_reponame/git/commits/$t_commit_id" );
-			#echo "t_json (SHA $t_commit_id) = " . var_dump($t_json);
 			if ( false === $t_json || is_null( $t_json ) ) {
 				# Some error occured retrieving the commit
 				echo "failed.\n";
@@ -686,20 +624,7 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 
 			if ( isset( $p_json->files ) ) {
 				foreach ( $p_json->files as $t_file ) {
-					/*
-					# Gitea API does not give info about modification type (add, mod, rm)
-					switch ( $t_file->status ) {
-						case 'added':
-							$t_changeset->files[] = new SourceFile( 0, '', $t_file->filename, 'add' );
-							break;
-						case 'modified':
-							$t_changeset->files[] = new SourceFile( 0, '', $t_file->filename, 'mod' );
-							break;
-						case 'removed':
-							$t_changeset->files[] = new SourceFile( 0, '', $t_file->filename, 'rm' );
-							break;
-					}
-					*/
+					# Gitea API semms not to give info about modification type (add, mod, rm)
 					$t_changeset->files[] = new SourceFile( 0, '', $t_file->filename, 'mod' );
 				}
 			}
@@ -748,7 +673,6 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 		# build the GitTea URL & POST data
 		$f_tea_root = $p_repo->info['tea_root'];
 		$t_url = "$f_tea_root/login/oauth/access_token";
-		#trigger_error("oauth_get_access_token", E_USER_ERROR);
 		$t_redirect_uri = config_get('path')
 			. plugin_page( 'oauth_authorize', true) . '&'
 			. http_build_query( array( 'id' => $p_repo->id ) );
@@ -766,19 +690,15 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 				'grant_type' => 'authorization_code',
 				'redirect_uri' => $t_redirect_uri );
 		}
-		#trigger_error("url = $t_url, data = ". implode(", ", $t_post_data ), E_USER_ERROR);
 		$t_data = self::url_post( $t_url, $t_post_data );
 		$t_access_token = '';
 		if ( !empty( $t_data ) ) {
-			#$t_response = array();
-			#parse_str( $t_data, $t_response );
 			$t_response = json_decode($t_data, true);
-			#trigger_error("t_response = $t_response", E_USER_ERROR);
 			if ( array_key_exists( 'access_token', $t_response) === true ) {
 				$t_access_token = $t_response['access_token'];
 			}
 			else {
-				#trigger_error("Error get access token failed", E_USER_ERROR);
+				return false;
 			}
 			if ( array_key_exists( 'expires_in', $t_response) === true ) {
 				$p_repo->info['expires_in'] = $t_response['expires_in'];
@@ -798,7 +718,6 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 			}
 			return true;
 		} else {
-			#trigger_error("t_data = $t_data", E_USER_ERROR);
 			return false;
 		}
 	}
@@ -821,7 +740,7 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 			# Last resort system call
 			$t_url = escapeshellarg( $p_url );
 			$t_post_data = escapeshellarg( $t_post_data );
-			return shell_exec( 'curl ' . $t_url . ' -d ' . $t_post_data );
+			return shell_exec( 'curl -X POST' . $t_url . ' -d ' . $t_post_data );
 		}
 	}
 
@@ -844,7 +763,7 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 			# Last resort system call
 			$t_url = escapeshellarg( $p_url );
 			$t_post_data = escapeshellarg( $t_post_data );
-			return shell_exec( 'curl ' . $t_url . ' -d ' . $t_post_data );
+			return shell_exec( 'curl -X POST' . $t_url . ' -d ' . $t_post_data . '-H "Content-Type:application/json", "accept: application/json"');
 		}
 	}
 
