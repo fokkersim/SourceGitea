@@ -1,9 +1,12 @@
 # MantisBt Source/SourceGitea Plugin
 
+## General
+This plugin is adapted from [SourceGithub](https://github.com/mantisbt-plugins/source-integration/tree/master/SourceGithub). It is tested with version 2.5.1 of the base plugin [Source](https://github.com/mantisbt-plugins/source-integration/tree/master/Source). It is at a very early stage with header authentication and PHP Curl only.
+
 ## Requirements
 At the moment SourceGitea requires the [PHP Curl](https://www.php.net/book.curl) extension, or the ability to execute
 system calls ([via shell_exec](https://www.php.net/function.shell-exec)).
-
+The base VCS integration plugin [Source](https://github.com/mantisbt-plugins/source-integration/tree/master/Source) is required.
 ## Repository configuration
 Make sure the base URL of the Gitea installation has no tailing / and use either user name or organization name depending on the ownder of the repository you want to add. Make sure not to add heading or tailing spaces to both user/organization name and repository name.
 
