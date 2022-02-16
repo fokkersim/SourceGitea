@@ -7,10 +7,8 @@ auth_reauthenticate();
 
 $f_repo_id = gpc_get_int( 'id' );
 $f_code = gpc_get_string( 'code' );
-#trigger_error("id = $f_repo_id, code = $f_code", E_USER_ERROR);
 
 $t_repo = SourceRepo::load( $f_repo_id );
-#trigger_error("t_repo = $t_repo->type", E_USER_ERROR);
 $t_authorized = SourceGiteaPlugin::oauth_get_access_token( $t_repo, $f_code );
 $t_redirect_url = plugin_page( 'repo_update_page', false, 'Source' ) . '&id=' . $t_repo->id;
 
