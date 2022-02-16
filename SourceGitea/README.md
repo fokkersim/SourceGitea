@@ -5,7 +5,7 @@ At the moment SourceGitea requires the [PHP Curl](https://www.php.net/book.curl)
 system calls ([via shell_exec](https://www.php.net/function.shell-exec)).
 
 ## Repository configuration
-Make sure the base URL of the Gitea installation has no tailing / and use either user name or organization name depending on the ownder of the repository you want to add.
+Make sure the base URL of the Gitea installation has no tailing / and use either user name or organization name depending on the ownder of the repository you want to add. Make sure not to add heading or tailing spaces to both user/organization name and repository name.
 
 ## Authentication
 OAuth authentication is implemented including token timeout check and refresh request via refresh-token. API token authentication planned for future.
