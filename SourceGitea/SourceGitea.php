@@ -728,6 +728,9 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 		}
 	}
 
+	# @brief POST request with payload as url query
+	# @param URL for the request
+	# @param post data
 	public static function url_post( $p_url, $p_post_data ) {
 		$t_post_data = http_build_query( $p_post_data );
 
@@ -750,9 +753,13 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 		}
 	}
 
+	# @brief POST request with payload in json format with automatic addition
+	# of Gitea authentication data to header.
+	# @param URL for the request
+	# @param post data
 	public static function url_post_json( $p_url, $p_post_data ) {
 		$t_post_data = json_encode($p_post_data);
-
+		# TODO probably add auth token timeout check here too (see self::url_get_json)
 		# Use the PHP cURL extension
 		if( function_exists( 'curl_init' ) ) {
 			$t_curl = curl_init( $p_url );
