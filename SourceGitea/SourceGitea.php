@@ -172,12 +172,22 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 		$f_tea_root = $t_repo->info['tea_root'];
 		$t_uri = "$f_tea_root/api/v1/repos/$t_username/$t_reponame/hooks?token=$t_access_token";
 		$data = SourceGiteaPlugin::url_post_json($t_uri, $t_payload);
-		# TODO Check response to decide if webhook creation was successful
-		return $p_response
+		$t_decode = json_decode($data);
+		if( array_key_exists( 'access_token', $t_decode) === true )
+		{
+			return $p_response
 			->withStatus( HTTP_STATUS_CREATED,
 				plugin_lang_get( 'webhook_success', 'SourceGitea' ) )
 			->withHeader('Content-type', 'application/json')
 			->write( $data );
+		}
+		else
+		{
+			return $p_response
+					->withStatus( HTTP_STATUS_CONFLICT,
+						'Webhook creation failed' )
+					->withJson( $t_hook );
+		}	
 	}
 
 	public function show_type() {
@@ -462,22 +472,16 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 				# Retrieve the payload's signature from the request headers
 				# Reference https://docs.gitea.io/en-us/webhooks/
 				$t_signature = null;
-				if( array_key_exists( 'HTTP_X_HUB_SIGNATURE', $_SERVER ) ) {
-					$t_signature = explode( '=', $_SERVER['HTTP_X_HUB_SIGNATURE'] );
-					if( $t_signature[0] != 'sha1' ) {
-						# Invalid hash - as per docs, only sha1 is supported
-						return;
-					}
-					$t_signature = $t_signature[1];
+				if( array_key_exists( 'HTTP_X_GITEA_SIGNATURE', $_SERVER ) ) {
+					$t_signature = $_SERVER['HTTP_X_GITEA_SIGNATURE'];
 				}
 
 				# Validate payload against webhook secret: checks OK if
 				# - Webhook secret not defined and no signature received from GitHub, OR
 				# - Payload's SHA1 hash salted with Webhook secret matches signature
-				# TODO cleanup and remove secret since not supported by Gitea
 				$t_secret = $t_repo->info['hub_webhook_secret'];
 				$t_valid = ( !$t_secret && !$t_signature )
-					|| $t_signature == hash_hmac('sha1', $f_payload, $t_secret);
+					|| $t_signature == hash_hmac('sha256', $f_payload, $t_secret);
 				if( !$t_valid ) {
 					# Invalid signature
 					return;
@@ -677,6 +681,7 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 			. plugin_page( 'oauth_authorize', true) . '&'
 			. http_build_query( array( 'id' => $p_repo->id ) );
 		if( $p_refresh === true) {
+			# Initial authentication payload
 			$t_post_data = array( 'client_id' => $p_repo->info['hub_app_client_id'],
 			'client_secret' => $p_repo->info['hub_app_secret'],
 			'refresh_token' => $p_code,
@@ -684,6 +689,7 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 			'redirect_uri' => $t_redirect_uri );
 		}
 		else {
+			# Refresh payload
 			$t_post_data = array( 'client_id' => $p_repo->info['hub_app_client_id'],
 				'client_secret' => $p_repo->info['hub_app_secret'],
 				'code' => $p_code,
@@ -785,7 +791,8 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 		return true;
 	}
 
-	# Direct json GET from API with access token via http cURL header
+	# Direct json GET from API with access token via http cURL header.
+	# adds authentication to http header
 	# @param: Source::repo
 	# @param: String url path to the api location
 	public static function url_get_json( $p_repo, $p_path ) {
