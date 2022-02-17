@@ -173,7 +173,7 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 		$t_uri = "$f_tea_root/api/v1/repos/$t_username/$t_reponame/hooks?token=$t_access_token";
 		$data = SourceGiteaPlugin::url_post_json($t_uri, $t_payload);
 		$t_decode = json_decode($data);
-		if( array_key_exists( 'access_token', $t_decode) === true )
+		if( array_key_exists( 'id', $t_decode) === true )
 		{
 			return $p_response
 			->withStatus( HTTP_STATUS_CREATED,
