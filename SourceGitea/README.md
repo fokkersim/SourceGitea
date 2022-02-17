@@ -32,3 +32,8 @@ Use the button in the repository management of the plugin
 * Secret field has to be kept empty
 * URL https://yourDomain/mantisbt/plugin.php?page=Source/checkin&api_key=<API_KEY_FROM_MANTIS_VCS_CONFIG_PAGE>
 * Secret field in SourceGitea repository configuration has to be kept empty (Gitea does not support secret field in payload)
+
+## Todo
+
+* Implement Gitea Access Token authentication as a choice (simple access token without oAuth2)
+* Re-add webhook secrets
