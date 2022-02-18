@@ -173,21 +173,18 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 		$t_uri = "$f_tea_root/api/v1/repos/$t_username/$t_reponame/hooks?token=$t_access_token";
 		$data = SourceGiteaPlugin::url_post_json($t_uri, $t_payload);
 		$t_decode = json_decode($data);
-		if( array_key_exists( 'id', $t_decode) === true )
-		{
-			return $p_response
-			->withStatus( HTTP_STATUS_CREATED,
-				plugin_lang_get( 'webhook_success', 'SourceGitea' ) )
-			->withHeader('Content-type', 'application/json')
-			->write( $data );
-		}
-		else
+		if( array_key_exists( 'id', $t_decode) === false )
 		{
 			return $p_response
 					->withStatus( HTTP_STATUS_CONFLICT,
 						'Webhook creation failed' )
 					->withJson( $t_hook );
-		}	
+		}
+		return $p_response
+		->withStatus( HTTP_STATUS_CREATED,
+			plugin_lang_get( 'webhook_success', 'SourceGitea' ) )
+		->withHeader('Content-type', 'application/json')
+		->write( $data );
 	}
 
 	public function show_type() {
