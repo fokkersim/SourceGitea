@@ -1,7 +1,7 @@
 # MantisBt Source/SourceGitea Plugin
 
 ## General
-This plugin is adapted from [SourceGithub](https://github.com/mantisbt-plugins/source-integration/tree/master/SourceGithub). It is tested with version 2.5.1 of the base plugin [Source](https://github.com/mantisbt-plugins/source-integration/tree/master/Source). It is at a very early stage with header authentication and PHP Curl only.
+This plugin is adapted from [SourceGithub](https://github.com/mantisbt-plugins/source-integration/tree/master/SourceGithub) originally by John Reese. It is tested with version 2.5.1 of the base plugin [Source](https://github.com/mantisbt-plugins/source-integration/tree/master/Source). It is at a very early stage with header authentication and PHP Curl only.
 
 ## Requirements
 At the moment SourceGitea requires the [PHP Curl](https://www.php.net/book.curl) extension, or the ability to execute
