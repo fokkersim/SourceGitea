@@ -357,7 +357,7 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 				   value="<?php echo string_attribute( $t_hub_app_access_token ) ?>"
 			/>
 			<?php echo plugin_lang_get( 'hub_app_authorized' ); ?>&nbsp;
-			<button id="btn_auth_revoke" type="button"
+			<button id="tea_btn_auth_revoke" type="button"
 					class="btn btn-primary btn-white btn-round btn-sm"
 					data-token-set="<?php echo $t_hub_app_access_token ? 'true' : 'false' ?>"
 			>
@@ -371,7 +371,7 @@ class SourceGiteaPlugin extends MantisSourceGitBasePlugin {
 <tr>
 	<td class="category"><?php echo plugin_lang_get( 'hub_webhook_secret' ) ?></td>
 	<td>
-		<div id="webhook_create" class="sourcegithub_token hidden">
+		<div id="tea_webhook_create" class="sourcegithub_token hidden">
 			<div class="space-4"></div>
 			<div class="space-4"></div>
 			<button type="button" class="btn btn-primary btn-white btn-round btn-sm">

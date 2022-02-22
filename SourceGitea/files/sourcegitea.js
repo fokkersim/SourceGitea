@@ -19,8 +19,8 @@ SourceGitea.rest_api = function(endpoint) {
 
 jQuery(document).ready(function($) {
 	$('#hub_app_client_id, #hub_app_secret').change(set_visibility);
-	$('#btn_auth_revoke').click(revoke_token);
-	$('#webhook_create > button').click(webhook_create);
+	$('#tea_btn_auth_revoke').click(tea_revoke_token);
+	$('#tea_webhook_create > button').click(tea_webhook_create);
 
 	// The PHP code initially hides all token authorization elements using the.
 	// 'hidden' class, which we need to remove so we can set visibility using
@@ -43,7 +43,7 @@ jQuery(document).ready(function($) {
 		) {
 			var div_token_authorized = $('#token_authorized');
 			var div_token_missing = $('#token_missing');
-			var div_webhook = $('#webhook_create');
+			var div_webhook = $('#tea_webhook_create');
 			var token = div_token_authorized.children('input');
 
 			div_id_secret_missing.hide();
@@ -60,7 +60,7 @@ jQuery(document).ready(function($) {
 		}
 	}
 
-	function revoke_token() {
+	function tea_revoke_token() {
 		var repo_id = $('#repo_id').val();
 
 		$.ajax({
@@ -73,7 +73,7 @@ jQuery(document).ready(function($) {
 		});
 	}
 
-	function webhook_create() {
+	function tea_webhook_create() {
 		var repo_id = $('#repo_id').val();
 		var status_icon = $('#webhook_status > i');
 		var status_message = $('#webhook_status > span');
@@ -84,7 +84,7 @@ jQuery(document).ready(function($) {
 			success: function(data, textStatus, xhr) {
 				status_icon.removeClass("fa-exclamation-triangle red").addClass("fa-check green");
 				status_message.text(xhr.statusText);
-				$('#webhook_create > button').prop("disabled", true);
+				$('#tea_webhook_create > button').prop("disabled", true);
 			},
 			error: function(xhr, textStatus, errorThrown) {
 				status_icon.removeClass("fa-check green").addClass("fa-exclamation-triangle red");
